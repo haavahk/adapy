@@ -1,14 +1,10 @@
 import logging
-import os
 import re
 from itertools import chain
 
-import numpy as np
-
-from ada import Assembly, Material, Part, Section
-from ada.core.containers import Materials
-from ada.fem import Constraint, Csys, Elem, FemSection, FemSet, Load, Mass, Spring
-from ada.fem.io import FemObjectReader, FemWriter
+from ada import Material, Part, Section
+from ada.fem import Constraint, Csys, Elem, FemSection, FemSet, Mass, Spring
+from ada.fem.io.utils import get_ff_regex
 from ada.materials.metals import CarbonSteel
 from ada.sections import GeneralProperties
 
@@ -29,37 +25,16 @@ def read_fem(assembly, fem_file, fem_name=None):
         reader.read_sesam_fem(d.read())
 
 
-def to_fem(
-    assembly,
-    name,
-    scratch_dir=None,
-    metadata=None,
-    execute=False,
-    run_ext=False,
-    cpus=2,
-    gpus=None,
-    overwrite=False,
-    exit_on_complete=False,
-):
-    if metadata is None:
-        metadata = dict()
-    if "control_file" not in metadata.keys():
-        metadata["control_file"] = None
-
-    a = SesamWriter(assembly)
-    a.write(name, scratch_dir, metadata, overwrite=overwrite)
-
-
-class SesamReader(FemObjectReader):
+class SesamReader:
     re_in = re.IGNORECASE | re.MULTILINE | re.DOTALL
 
     # Nodes
-    re_gnode_in = FemObjectReader.get_ff_regex("GNODE", "nodex", "nodeno", "ndof", "odof")
-    re_gcoord_in = FemObjectReader.get_ff_regex("GCOORD", "id", "x", "y", "z")
+    re_gnode_in = get_ff_regex("GNODE", "nodex", "nodeno", "ndof", "odof")
+    re_gcoord_in = get_ff_regex("GCOORD", "id", "x", "y", "z")
 
     # Elements
-    re_gelmnt = FemObjectReader.get_ff_regex("GELMNT1", "elnox", "elno", "eltyp", "eltyad", "nids")
-    re_gelref1 = FemObjectReader.get_ff_regex(
+    re_gelmnt = get_ff_regex("GELMNT1", "elnox", "elno", "eltyp", "eltyad", "nids")
+    re_gelref1 = get_ff_regex(
         "GELREF1",
         "elno",
         "matno",
@@ -77,8 +52,8 @@ class SesamReader(FemObjectReader):
     )
 
     # Beam Sections
-    re_sectnames = FemObjectReader.get_ff_regex("TDSECT", "nfield", "geono", "codnam", "codtxt", "set_name")
-    re_giorh = FemObjectReader.get_ff_regex(
+    re_sectnames = get_ff_regex("TDSECT", "nfield", "geono", "codnam", "codtxt", "set_name")
+    re_giorh = get_ff_regex(
         "GIORH ",
         "geono",
         "hz",
@@ -93,8 +68,8 @@ class SesamReader(FemObjectReader):
         "NLOBYB|",
         "NLOBZ|",
     )
-    re_gbox = FemObjectReader.get_ff_regex("GBOX", "geono", "hz", "ty", "tb", "tt", "by", "sfy", "sfz")
-    re_gbeamg = FemObjectReader.get_ff_regex(
+    re_gbox = get_ff_regex("GBOX", "geono", "hz", "ty", "tb", "tt", "by", "sfy", "sfz")
+    re_gbeamg = get_ff_regex(
         "GBEAMG",
         "geono",
         "comp",
@@ -116,15 +91,15 @@ class SesamReader(FemObjectReader):
         "wz|",
         "fabr|",
     )
-    re_gpipe = FemObjectReader.get_ff_regex("GPIPE", "geono", "di", "dy", "t", "sfy", "sfz")
-    re_lcsys = FemObjectReader.get_ff_regex("GUNIVEC", "transno", "unix", "uniy", "uniz")
+    re_gpipe = get_ff_regex("GPIPE", "geono", "di", "dy", "t", "sfy", "sfz")
+    re_lcsys = get_ff_regex("GUNIVEC", "transno", "unix", "uniy", "uniz")
 
     # Shell section
-    re_thick = FemObjectReader.get_ff_regex("GELTH", "geono", "th")
+    re_thick = get_ff_regex("GELTH", "geono", "th")
 
     # Other
-    re_bnbcd = FemObjectReader.get_ff_regex("BNBCD", "nodeno", "ndof", "content")
-    re_belfix = FemObjectReader.get_ff_regex(
+    re_bnbcd = get_ff_regex("BNBCD", "nodeno", "ndof", "content")
+    re_belfix = get_ff_regex(
         "BELFIX",
         "fixno",
         "opt",
@@ -137,19 +112,17 @@ class SesamReader(FemObjectReader):
         "a5|",
         "a6|",
     )
-    re_mgsprng = FemObjectReader.get_ff_regex("MGSPRNG", "matno", "ndof", "bulk")
-    re_bnmass = FemObjectReader.get_ff_regex("BNMASS", "nodeno", "ndof", "m1", "m2", "m3", "m4", "m5", "m6")
-    re_geccen = FemObjectReader.get_ff_regex("GECCEN", "eccno", "ex", "ey", "ez")
-    re_bldep = FemObjectReader.get_ff_regex("BLDEP", "slave", "master", "nddof", "ndep", "bulk")
-    re_setmembs = FemObjectReader.get_ff_regex("GSETMEMB", "nfield", "isref", "index", "istype", "isorig", "members")
-    re_setnames = FemObjectReader.get_ff_regex("TDSETNAM", "nfield", "isref", "codnam", "codtxt", "set_name")
+    re_mgsprng = get_ff_regex("MGSPRNG", "matno", "ndof", "bulk")
+    re_bnmass = get_ff_regex("BNMASS", "nodeno", "ndof", "m1", "m2", "m3", "m4", "m5", "m6")
+    re_geccen = get_ff_regex("GECCEN", "eccno", "ex", "ey", "ez")
+    re_bldep = get_ff_regex("BLDEP", "slave", "master", "nddof", "ndep", "bulk")
+    re_setmembs = get_ff_regex("GSETMEMB", "nfield", "isref", "index", "istype", "isorig", "members")
+    re_setnames = get_ff_regex("TDSETNAM", "nfield", "isref", "codnam", "codtxt", "set_name")
 
     # Materials
-    re_matnames = FemObjectReader.get_ff_regex("TDMATER", "nfield", "geo_no", "codnam", "codtxt", "name")
-    re_misosel = FemObjectReader.get_ff_regex(
-        "MISOSEL", "matno", "young", "poiss", "rho", "damp", "alpha", "iyield", "yield"
-    )
-    re_morsmel = FemObjectReader.get_ff_regex(
+    re_matnames = get_ff_regex("TDMATER", "nfield", "geo_no", "codnam", "codtxt", "name")
+    re_misosel = get_ff_regex("MISOSEL", "matno", "young", "poiss", "rho", "damp", "alpha", "iyield", "yield")
+    re_morsmel = get_ff_regex(
         "MORSMEL",
         "matno",
         "q1",
@@ -297,7 +270,7 @@ class SesamReader(FemObjectReader):
         return FemElements(list(map(grab_elements, cls.re_gelmnt.finditer(bulk_str))), fem_obj=parent)
 
     @classmethod
-    def get_materials(cls, bulk_str, parent):
+    def get_materials(cls, bulk_str, part):
         """
         Interpret Material bulk string to FEM objects
 
@@ -348,6 +321,7 @@ class SesamReader(FemObjectReader):
                     sig_y=5e6,
                 ),
                 metadata=d,
+                parent=part,
             )
 
         def get_mat(match):
@@ -366,6 +340,7 @@ class SesamReader(FemObjectReader):
                     eps_p=[],
                     sig_y=roundoff(d["yield"]),
                 ),
+                parent=part,
             )
 
         return Materials(
@@ -375,110 +350,8 @@ class SesamReader(FemObjectReader):
                     map(get_morsmel, cls.re_morsmel.finditer(bulk_str)),
                 ]
             ),
-            parent=parent,
+            parent=part,
         )
-
-    @classmethod
-    def get_sets(cls, bulk_str, parent):
-        from itertools import groupby
-        from operator import itemgetter
-
-        from ada.fem import FemSet
-        from ada.fem.containers import FemSets
-
-        def get_setmap(m):
-            d = m.groupdict()
-            set_type = "nset" if cls.str_to_int(d["istype"]) == 1 else "elset"
-            if set_type == "nset":
-                members = [parent.nodes.from_id(cls.str_to_int(x)) for x in d["members"].split()]
-            else:
-                members = [parent.elements.from_id(cls.str_to_int(x)) for x in d["members"].split()]
-            return cls.str_to_int(d["isref"]), set_type, members
-
-        set_map = dict()
-        for setid_el_type, content in groupby(
-            map(get_setmap, cls.re_setmembs.finditer(bulk_str)), key=itemgetter(0, 1)
-        ):
-            setid = setid_el_type[0]
-            eltype = setid_el_type[1]
-            set_map[setid] = [list(), eltype]
-            for c in content:
-                set_map[setid][0] += c[2]
-
-        def get_femsets(m):
-            nonlocal set_map
-            d = m.groupdict()
-            isref = cls.str_to_int(d["isref"])
-            fem_set = FemSet(
-                d["set_name"].strip(),
-                set_map[isref][0],
-                set_map[isref][1],
-                parent=parent,
-            )
-            return fem_set
-
-        return FemSets(list(map(get_femsets, cls.re_setnames.finditer(bulk_str))), fem_obj=parent)
-
-    @staticmethod
-    def get_hinges_from_elem(elem, members, hinges_global, lcsysd, xvec, zvec, yvec):
-        """
-
-        :param elem:
-        :param members:
-        :param hinges_global:
-        # :param fem:
-        :return:
-        """
-        if len(elem.nodes) > 2:
-            raise ValueError("This algorithm was not designed for more than 2 noded elements")
-        from ada.core.utils import unit_vector
-
-        hinges = []
-        for i, x in enumerate(members):
-            if i >= len(elem.nodes):
-                break
-            if x == 0:
-                continue
-            if x not in hinges_global.keys():
-                raise ValueError("fixno not found!")
-            opt, trano, a1, a2, a3, a4, a5, a6 = hinges_global[x]
-            n = elem.nodes[i]
-            if trano > 0:
-                csys = None
-            else:
-                csys = Csys(
-                    f"el{elem.id}_hinge{i + 1}_csys",
-                    coords=([unit_vector(xvec) + n.p, unit_vector(yvec) + n.p, n.p]),
-                )
-            dofs_origin = [1, 2, 3, 4, 5, 6]
-            d = [int(x) for x, i in zip(dofs_origin, (a1, a2, a3, a4, a5, a6)) if int(i) != 0]
-
-            hinges.append((n, d, csys))
-        return hinges
-
-    @staticmethod
-    def get_ecc_from_elem(elem, members, eccentricities, fix_data):
-        """
-
-        :param elem:
-        :param members:
-        :param eccentricities:
-        :param fix_data:
-        :type elem: ada.fem.Elem
-        """
-        # To the interpretation here
-        start = 0 if fix_data != -1 else len(elem.nodes)
-        end = len(elem.nodes) if fix_data != -1 else 2 * len(elem.nodes)
-        eccen = []
-        for i, x in enumerate(members[start:]):
-            if i >= end:
-                break
-            if x == 0:
-                continue
-            n_offset = elem.nodes[i]
-            ecc = eccentricities[x]
-            eccen.append((n_offset, ecc))
-        return eccen
 
     @classmethod
     def get_sections(cls, bulk_str, fem):
@@ -554,6 +427,7 @@ class SesamReader(FemObjectReader):
                 t_ftop=roundoff(d["tt"]),
                 t_fbtn=roundoff(d["tb"]),
                 genprops=GeneralProperties(sfy=float(d["sfy"]), sfz=float(d["sfz"])),
+                parent=fem.parent,
             )
 
         # Box-beam
@@ -571,6 +445,7 @@ class SesamReader(FemObjectReader):
                 t_ftop=roundoff(d["tt"]),
                 t_fbtn=roundoff(d["tb"]),
                 genprops=GeneralProperties(sfy=float(d["sfy"]), sfz=float(d["sfz"])),
+                parent=fem.parent,
             )
 
         # General-beam
@@ -596,15 +471,12 @@ class SesamReader(FemObjectReader):
             if sec_id in fem.parent.sections.idmap.keys():
                 sec = fem.parent.sections.get_by_id(sec_id)
                 sec._genprops = gen_props
-                gen_props.edit(parent=sec)
+                gen_props.parent = sec
             else:
                 sec = Section(
-                    name=f"GB{sec_id}",
-                    sec_id=sec_id,
-                    sec_type="GENBEAM",
-                    genprops=gen_props,
+                    name=f"GB{sec_id}", sec_id=sec_id, sec_type="GENBEAM", genprops=gen_props, parent=fem.parent
                 )
-                gen_props.edit(parent=sec)
+                gen_props.parent = sec
                 fem.parent.sections.add(sec)
 
         # Tubular-beam
@@ -623,6 +495,7 @@ class SesamReader(FemObjectReader):
                 r=roundoff(float(d["dy"]) / 2),
                 wt=roundoff(t),
                 genprops=GeneralProperties(sfy=float(d["sfy"]), sfz=float(d["sfz"])),
+                parent=fem.parent,
             )
 
         def get_thicknesses(match):
@@ -758,6 +631,109 @@ class SesamReader(FemObjectReader):
         sections = list(filter(None, map(get_femsecs, cls.re_gelref1.finditer(bulk_str))))
         print(f"Successfully imported {next(importedgeom_counter) - 1} FEM sections out of {next(total_geo) - 1}")
         return FemSections(sections, fem_obj=fem)
+
+    @classmethod
+    def get_sets(cls, bulk_str, parent):
+        from itertools import groupby
+        from operator import itemgetter
+
+        from ada.fem import FemSet
+        from ada.fem.containers import FemSets
+
+        def get_setmap(m):
+            d = m.groupdict()
+            set_type = "nset" if cls.str_to_int(d["istype"]) == 1 else "elset"
+            if set_type == "nset":
+                members = [parent.nodes.from_id(cls.str_to_int(x)) for x in d["members"].split()]
+            else:
+                members = [parent.elements.from_id(cls.str_to_int(x)) for x in d["members"].split()]
+            return cls.str_to_int(d["isref"]), set_type, members
+
+        set_map = dict()
+        for setid_el_type, content in groupby(
+            map(get_setmap, cls.re_setmembs.finditer(bulk_str)), key=itemgetter(0, 1)
+        ):
+            setid = setid_el_type[0]
+            eltype = setid_el_type[1]
+            set_map[setid] = [list(), eltype]
+            for c in content:
+                set_map[setid][0] += c[2]
+
+        def get_femsets(m):
+            nonlocal set_map
+            d = m.groupdict()
+            isref = cls.str_to_int(d["isref"])
+            fem_set = FemSet(
+                d["set_name"].strip(),
+                set_map[isref][0],
+                set_map[isref][1],
+                parent=parent,
+            )
+            return fem_set
+
+        return FemSets(list(map(get_femsets, cls.re_setnames.finditer(bulk_str))), fem_obj=parent)
+
+    @staticmethod
+    def get_hinges_from_elem(elem, members, hinges_global, lcsysd, xvec, zvec, yvec):
+        """
+
+        :param elem:
+        :param members:
+        :param hinges_global:
+        :type elem: ada.Elem
+        :return:
+        """
+        if len(elem.nodes) > 2:
+            raise ValueError("This algorithm was not designed for more than 2 noded elements")
+        from ada.core.utils import unit_vector
+
+        hinges = []
+        for i, x in enumerate(members):
+            if i >= len(elem.nodes):
+                break
+            if x == 0:
+                continue
+            if x not in hinges_global.keys():
+                raise ValueError("fixno not found!")
+            opt, trano, a1, a2, a3, a4, a5, a6 = hinges_global[x]
+            n = elem.nodes[i]
+            if trano > 0:
+                csys = None
+            else:
+                csys = Csys(
+                    f"el{elem.id}_hinge{i + 1}_csys",
+                    coords=([unit_vector(xvec) + n.p, unit_vector(yvec) + n.p, n.p]),
+                    parent=elem.parent,
+                )
+            dofs_origin = [1, 2, 3, 4, 5, 6]
+            d = [int(x) for x, i in zip(dofs_origin, (a1, a2, a3, a4, a5, a6)) if int(i) != 0]
+
+            hinges.append((n, d, csys))
+        return hinges
+
+    @staticmethod
+    def get_ecc_from_elem(elem, members, eccentricities, fix_data):
+        """
+
+        :param elem:
+        :param members:
+        :param eccentricities:
+        :param fix_data:
+        :type elem: ada.fem.Elem
+        """
+        # To the interpretation here
+        start = 0 if fix_data != -1 else len(elem.nodes)
+        end = len(elem.nodes) if fix_data != -1 else 2 * len(elem.nodes)
+        eccen = []
+        for i, x in enumerate(members[start:]):
+            if i >= end:
+                break
+            if x == 0:
+                continue
+            n_offset = elem.nodes[i]
+            ecc = eccentricities[x]
+            eccen.append((n_offset, ecc))
+        return eccen
 
     @classmethod
     def get_mass(cls, bulk_str, fem):
@@ -1096,7 +1072,7 @@ USER:     {user}            ACCOUNT:     \n"""
                             "GIORH",
                             [
                                 (secid, section.h, section.t_w, section.w_top),
-                                (section.t_ftop, section.w_btn, section.t_fbtn, p.Sfy),
+                                (section.t_ftop, section.w_top, section.t_ftop, p.Sfy),
                                 (p.Sfz,),
                             ],
                         )

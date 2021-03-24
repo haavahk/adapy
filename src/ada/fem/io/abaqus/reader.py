@@ -26,9 +26,10 @@ from ada.fem import (
     Surface,
 )
 from ada.fem.containers import FemElements, FemSections, FemSets
-from ada.fem.io import FemObjectReader
-from ada.fem.io.abaqus.common import AbaFF
+from ada.fem.io.abaqus.common import AbaCards, AbaFF
 from ada.materials.metals import CarbonSteel
+
+from ..utils import str_to_int
 
 part_name_counter = Counter(1, "Part")
 
@@ -57,13 +58,15 @@ def import_bulk2(file_path, buffer_function):
             return buffer_function(m)
 
 
-class AbaqusReader(FemObjectReader):
+class AbaqusReader:
+    re_in = re.IGNORECASE | re.MULTILINE | re.DOTALL
+
     def __init__(self, assembly):
         self.assembly = assembly
         self._folder_name = None
 
     def read_inp_file(self, inp_path):
-        bulk_str = self.bulk_w_includes(inp_path)
+        bulk_str = bulk_w_includes(inp_path)
         lbulk = bulk_str.lower()
         ass_start = lbulk.find("\n*assembly")
         ass_end = lbulk.rfind("\n*end assembly")
@@ -101,19 +104,19 @@ class AbaqusReader(FemObjectReader):
 
         if uses_assembly_parts is True:
             self.assembly.fem._nodes += AbaPartReader.get_nodes_from_inp(ass_sets, ass_fem)
-            self.assembly.fem._lcsys.update(AbaPartReader.get_lcsys_from_bulk(ass_sets, ass_fem))
+            self.assembly.fem.lcsys.update(AbaPartReader.get_lcsys_from_bulk(ass_sets, ass_fem))
             self.assembly.fem._elements += AbaPartReader.get_elem_from_inp(ass_sets, ass_fem)
             self.assembly.fem._sets += AbaPartReader.get_sets_from_bulk(ass_sets, ass_fem)
             self.assembly.fem.sets.link_data()
-            self.assembly.fem._surfaces.update(AbaPartReader.get_surfaces_from_bulk(ass_sets, ass_fem))
+            self.assembly.fem.surfaces.update(AbaPartReader.get_surfaces_from_bulk(ass_sets, ass_fem))
             self.assembly.fem._constraints += AbaPartReader.get_constraints_from_inp(ass_sets, ass_fem)
-            self.assembly.fem._connector_sections.update(
+            self.assembly.fem.connector_sections.update(
                 AbaPartReader.get_connector_sections_from_bulk(props_str, ass_fem)
             )
-            self.assembly.fem._connectors.update(AbaPartReader.get_connectors_from_inp(ass_sets, ass_fem))
+            self.assembly.fem.connectors.update(AbaPartReader.get_connectors_from_inp(ass_sets, ass_fem))
             self.assembly.fem._bcs += AbaPartReader.get_bcs_from_bulk(props_str, ass_fem)
 
-        self.get_interactions_from_lines(props_str)
+        get_interactions_from_bulk_str(props_str, self.assembly)
         self.get_initial_conditions_from_lines(props_str)
 
     @staticmethod
@@ -131,22 +134,7 @@ class AbaqusReader(FemObjectReader):
                 with open(pathlib.Path(input_files_dir) / fname, "r") as d:
                     return d.read()
 
-        return "".join(filter(None, map(read_inp, os.listdir(input_files_dir))))
-
-    @staticmethod
-    def bulk_w_includes(inp_path):
-        re_in = re.compile(r"\*Include,\s*input=(.*?)$", re.IGNORECASE | re.MULTILINE | re.DOTALL)
-        bulk_repl = dict()
-        with open(inp_path, "r") as inpDeck:
-            bulk_str = inpDeck.read()
-            for m in re_in.finditer(bulk_str):
-                search_key = m.group(0)
-                with open(os.path.join(os.path.dirname(inp_path), m.group(1)), "r") as d:
-                    bulk_repl[search_key] = d.read()
-
-        for key, val in bulk_repl.items():
-            bulk_str = bulk_str.replace(key, val)
-        return bulk_str
+        return "".join([x for x in map(read_inp, os.listdir(input_files_dir)) if x is not None])
 
     @staticmethod
     def grab_set_from_assembly(set_str, fem_p, set_type):
@@ -419,103 +407,6 @@ class AbaqusReader(FemObjectReader):
                     props.update(dict(pressure_overclosure=behave, tabular=tabular))
             self.assembly.fem.add_interaction_property(InteractionProperty(**props))
 
-    def get_interactions_from_lines(self, bulk_str):
-        """
-        **
-        ** INTERACTIONS
-        **
-        ** Interaction: Int-1
-        *Contact, op=NEW
-        *Contact Inclusions, ALL EXTERIOR
-        *Contact Property Assignment
-         ,  , IntProp-1
-        ** ----------------------------------------------------------------
-        **
-        ** STEP: dyn
-        **
-        """
-        from .common import AbaFF
-
-        if bulk_str.find("** Interaction") == -1 and bulk_str.find("*Contact") == -1:
-            return
-
-        # re_general_contact = re.compile(
-        #     r"\*\* interaction: (?P<name>.*?)\n(?:\*Contact, op=(?P<mod>.*?))\n(?:\*contact inclusions, "
-        #     r"(?P<inclusions>.*?))\n(?:\*contact property assignment\n\s*,\s*,\s*(?P<intprop>.*?))$",
-        #     self.re_in,
-        # )
-
-        def resolve_surface_ref(surf_ref, assembly):
-            surf_name = surf_ref.split(".")[-1] if "." in surf_ref else surf_ref
-            surf = None
-            if surf_name in assembly.fem.surfaces.keys():
-                surf = assembly.fem.surfaces[surf_name]
-
-            for p in assembly.get_all_parts_in_assembly():
-                if surf_name in p.fem.surfaces.keys():
-                    surf = p.fem.surfaces[surf_name]
-            if surf is None:
-                raise ValueError("Unable to find surfaces in assembly parts")
-
-            return surf
-
-        contact_pairs = AbaFF(
-            "Contact Pair",
-            [
-                (
-                    "interaction=",
-                    "small sliding==|",
-                    "type=|",
-                    "adjust=|",
-                    "mechanical constraint=|",
-                    "geometric correction=|",
-                    "cpset=|",
-                ),
-                ("surf1", "surf2"),
-            ],
-            nameprop=("Interaction", "name"),
-        )
-
-        for m in contact_pairs.regex.finditer(bulk_str):
-            d = m.groupdict()
-            intprop = self.assembly.fem.intprops[d["interaction"]]
-            surf1 = resolve_surface_ref(d["surf1"], self.assembly)
-            surf2 = resolve_surface_ref(d["surf2"], self.assembly)
-
-            self.assembly.fem.add_interaction(Interaction(d["name"], "surface", surf1, surf2, intprop, metadata=d))
-
-        #
-        # for m in re_iglobal.finditer(bulk_str):
-        #     inter_bulk = m.group()
-        #     gen_contact_res = re_general_contact.search(inter_bulk)
-        #     surf_contact_res = re_surface_contact.search(inter_bulk)
-        #     if gen_contact_res is not None:
-        #         d = gen_contact_res.groupdict()
-        #         intprop = self.assembly.fem.intprops[d["intprop"]]
-        #         metadata = dict(contact_mod=d["mod"], contact_inclusions=d["inclusions"])
-        #         interact = Interaction(d["name"], "general", None, None, intprop, metadata=metadata)
-        #     elif surf_contact_res is not None:
-        #         d = surf_contact_res.groupdict()
-        #         intprop = self.assembly.fem.intprops[d["intprop"]]
-        #         surf1_name = d["surf1"].split(".")[-1] if "." in d["surf1"] else d["surf1"]
-        #         surf2_name = d["surf2"].split(".")[-1] if "." in d["surf2"] else d["surf2"]
-        #         surf1, surf2 = None, None
-        #         if surf1_name in self.assembly.fem.surfaces.keys():
-        #             surf1 = self.assembly.fem.surfaces[surf1_name]
-        #         if surf2_name in self.assembly.fem.surfaces.keys():
-        #             surf2 = self.assembly.fem.surfaces[surf2_name]
-        #         for p in self.assembly.get_all_parts_in_assembly():
-        #             if surf1_name in p.fem.surfaces.keys():
-        #                 surf1 = p.fem.surfaces[surf1_name]
-        #             if surf2_name in p.fem.surfaces.keys():
-        #                 surf2 = p.fem.surfaces[surf2_name]
-        #         if surf1 is None or surf2 is None:
-        #             raise ValueError("Unable to find surfaces in assembly parts")
-        #         interact = Interaction(d["name"], "surface", surf1, surf2, intprop, d["mech_constr"])
-        #     else:
-        #         raise ValueError("Unable to interpret interaction")
-        #     self.assembly.fem.add_interaction(interact)
-
     def get_initial_conditions_from_lines(self, bulk_str):
         """
         TODO: Optimize this function
@@ -570,7 +461,9 @@ class AbaqusReader(FemObjectReader):
             self.assembly.fem.add_predefined_field(grab_init_props(match))
 
 
-class AbaPartReader(FemObjectReader):
+class AbaPartReader:
+    re_in = re.IGNORECASE | re.MULTILINE | re.DOTALL
+
     def __init__(self, p_name, p_bulk_str, assembly, instance_name=None, metadata=None):
         metadata = dict(move=None, rotate=None) if metadata is None else metadata
         self._bulk_str = p_bulk_str
@@ -591,7 +484,7 @@ class AbaPartReader(FemObjectReader):
         self.fem._sections = self.get_sections_from_inp(self._bulk_str, self.fem)
         self.fem._bcs += self.get_bcs_from_bulk(self._bulk_str, self.fem)
         self.fem._masses = self.get_mass_from_bulk(self._bulk_str, self.fem)
-        self.fem._surfaces.update(self.get_surfaces_from_bulk(self._bulk_str, self.fem))
+        self.fem.surfaces.update(self.get_surfaces_from_bulk(self._bulk_str, self.fem))
         self.fem._lcsys = self.get_lcsys_from_bulk(self._bulk_str, self.fem)
         self.fem._constraints = self.get_constraints_from_inp(self._bulk_str, self.fem)
 
@@ -670,7 +563,7 @@ class AbaPartReader(FemObjectReader):
                 for li in members.splitlines():
                     new_mem = []
                     temp = li.split(",")
-                    elid = cls.str_to_int(temp[0])
+                    elid = str_to_int(temp[0])
                     for d in temp[1:]:
                         temp2 = [x.strip() for x in d.split(".")]
                         par_ = None
@@ -686,12 +579,12 @@ class AbaPartReader(FemObjectReader):
                                     break
                             if par_ is None:
                                 raise ValueError(f'Unable to find parent for "{par}"')
-                            r = par_.fem.nodes.from_id(cls.str_to_int(setr))
+                            r = par_.fem.nodes.from_id(str_to_int(setr))
                             if type(r) != Node:
                                 raise ValueError("Node ID not found")
                             new_mem.append(r)
                         else:
-                            r = fem.nodes.from_id(cls.str_to_int(d))
+                            r = fem.nodes.from_id(str_to_int(d))
                             if type(r) != Node:
                                 raise ValueError("Node ID not found")
                             new_mem.append(r)
@@ -815,11 +708,11 @@ class AbaPartReader(FemObjectReader):
                 if dof_in.lower() == "encastre":
                     dofs = dof_in
                 else:
-                    dof = cls.str_to_int(temp[1])
+                    dof = str_to_int(temp[1])
                     if len(temp) == 2:
                         dofs = [x if dof == x else None for x in range(1, 7)]
                     else:
-                        dof_end = cls.str_to_int(temp[2])
+                        dof_end = str_to_int(temp[2])
                         dofs = [x if dof <= x <= dof_end else None for x in range(1, 7)]
 
             else:
@@ -854,7 +747,7 @@ class AbaPartReader(FemObjectReader):
                 if set_name in fem.nsets.keys():
                     fem_set = fem.nsets[set_name]
                 else:
-                    val = cls.str_to_int(set_name)
+                    val = str_to_int(set_name)
                     if val in fem.nodes.dmap.keys():
                         node = fem.nodes.from_id(val)
                         fem_set = FemSet(bc_name + "_set", [node], "nset", parent=fem)
@@ -904,7 +797,7 @@ class AbaPartReader(FemObjectReader):
             elset = parent.sets.get_elset_from_name(d["elset"])
             mass_type = d["mass_type"]
             p_type = d["ptype"]
-            mass = [cls.str_to_int(x.strip()) for x in d["mass"].split(",") if x.strip() != ""]
+            mass = [str_to_int(x.strip()) for x in d["mass"].split(",") if x.strip() != ""]
             units = d["units"]
             mass = Mass(d["elset"], elset, mass, mass_type, p_type, units, parent=parent)
             map_element(elset, mass)
@@ -926,7 +819,7 @@ class AbaPartReader(FemObjectReader):
         def interpret_member(mem):
             msplit = mem.split(",")
             try:
-                ref = cls.str_to_int(msplit[0])
+                ref = str_to_int(msplit[0])
             except BaseException as e:
                 logging.debug(e)
                 ref = msplit[0].strip()
@@ -1126,13 +1019,13 @@ class AbaPartReader(FemObjectReader):
                 if mpc_type not in mpc_dict.keys():
                     mpc_dict[mpc_type] = []
                 try:
-                    n1_ = cls.str_to_int(m)
+                    n1_ = str_to_int(m)
                 except BaseException as e:
                     logging.debug(e)
                     n1_ = grab_set_from_assembly(m, fem, "nset")
 
                 try:
-                    n2_ = cls.str_to_int(s)
+                    n2_ = str_to_int(s)
                 except BaseException as e:
                     logging.debug(e)
                     n2_ = grab_set_from_assembly(s, fem, "nset")
@@ -1173,11 +1066,12 @@ class AbaPartReader(FemObjectReader):
         return consecsd
 
     @classmethod
-    def get_connectors_from_inp(cls, bulk_str, parent):
+    def get_connectors_from_inp(cls, bulk_str, fem):
         """
 
         :param bulk_str:
-        :param parent:
+        :param fem:
+        :type fem: ada.fem.FEM
         :return:
         """
         a = AbaFF("Connector Section", [("elset=", "behavior="), ("contype",), ("csys",)])
@@ -1187,7 +1081,7 @@ class AbaPartReader(FemObjectReader):
         for m in a.regex.finditer(bulk_str):
             d = m.groupdict()
             name = d["behavior"] + next(nsuffix)
-            elset = parent.elsets[d["elset"]]
+            elset = fem.elsets[d["elset"]]
             elem = elset.members[0]
 
             csys_ref = d["csys"].replace('"', "")
@@ -1206,8 +1100,8 @@ class AbaPartReader(FemObjectReader):
                 n1,
                 n2,
                 con_type,
-                parent.connector_sections[d["behavior"]],
-                csys=parent.lcsys[csys_ref],
+                fem.connector_sections[d["behavior"]],
+                csys=fem.lcsys[csys_ref],
             )
         return cons
 
@@ -1433,6 +1327,70 @@ class AbaPartReader(FemObjectReader):
         return map(grab_shell, re_shell.finditer(bulk_str))
 
 
+def get_interactions_from_bulk_str(bulk_str, assembly):
+    """
+
+    :param bulk_str:
+    :param assembly:
+    :type assembly: ada.Assembly
+    :return:
+    """
+    gen_name = Counter(1, "general")
+
+    if bulk_str.find("** Interaction") == -1 and bulk_str.find("*Contact") == -1:
+        return
+
+    def resolve_surface_ref(surf_ref):
+        surf_name = surf_ref.split(".")[-1] if "." in surf_ref else surf_ref
+        surf = None
+        if surf_name in assembly.fem.surfaces.keys():
+            surf = assembly.fem.surfaces[surf_name]
+
+        for p in assembly.get_all_parts_in_assembly():
+            if surf_name in p.fem.surfaces.keys():
+                surf = p.fem.surfaces[surf_name]
+        if surf is None:
+            raise ValueError("Unable to find surfaces in assembly parts")
+
+        return surf
+
+    for m in AbaCards.contact_pairs.regex.finditer(bulk_str):
+        d = m.groupdict()
+        intprop = assembly.fem.intprops[d["interaction"]]
+        surf1 = resolve_surface_ref(d["surf1"])
+        surf2 = resolve_surface_ref(d["surf2"])
+
+        assembly.fem.add_interaction(Interaction(d["name"], "surface", surf1, surf2, intprop, metadata=d))
+
+    for m in AbaCards.contact_general.regex.finditer(bulk_str):
+        s = m.start()
+        e = m.endpos
+        interact_str = bulk_str[s:e]
+        d = m.groupdict()
+        intprop = assembly.fem.intprops[d["interaction"]]
+        # surf1 = resolve_surface_ref(d["surf1"])
+        # surf2 = resolve_surface_ref(d["surf2"])
+
+        assembly.fem.add_interaction(
+            Interaction(next(gen_name), "general", None, None, intprop, metadata=dict(aba_bulk=interact_str))
+        )
+
+
+def bulk_w_includes(inp_path):
+    re_in = re.compile(r"\*Include,\s*input=(.*?)$", re.IGNORECASE | re.MULTILINE | re.DOTALL)
+    bulk_repl = dict()
+    with open(inp_path, "r") as inpDeck:
+        bulk_str = inpDeck.read()
+        for m in re_in.finditer(bulk_str):
+            search_key = m.group(0)
+            with open(os.path.join(os.path.dirname(inp_path), m.group(1)), "r") as d:
+                bulk_repl[search_key] = d.read()
+
+    for key, val in bulk_repl.items():
+        bulk_str = bulk_str.replace(key, val)
+    return bulk_str
+
+
 def list_cleanup(membulkstr):
     return membulkstr.replace(",\n", ",").replace("\n", ",")
 
@@ -1442,6 +1400,7 @@ def grab_set_from_assembly(set_str, fem_p, set_type):
 
     :param set_str:
     :param fem_p:
+    :param set_type:
     :type fem_p: ada.fem.FEM
     :rtype: ada.fem.FemSet
     """

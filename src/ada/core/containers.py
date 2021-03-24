@@ -21,9 +21,6 @@ __all__ = [
     "Sections",
 ]
 
-logger = logging.getLogger("ada")
-logger.setLevel(logging.ERROR)
-
 
 class BaseCollections:
     """
@@ -135,7 +132,6 @@ class Beams(BaseCollections):
             vol_new = []
             for p in vol_:
                 vol_new.append((roundoff(p[0] - margins), roundoff(p[1] + margins)))
-            # logger.debug('scaled from "{}" to "{}"'.format(vol, vol_new))
         else:
             vol_new = vol_
         vol = vol_new
@@ -411,9 +407,10 @@ class Connections(BaseCollections):
 
         t_ = roundoff(t)
         if 0 < t_ < 1:
+            logging.debug(f"Beam cross-check indicates that the beams {bm1} and {bm2} are most probably parallel")
             return None
         if p_check(AB, CD):
-            # logger.debug('beams', bm1.ID, bm2.ID, 'are parallel')
+            logging.debug(f"beams {bm1} {bm2} are parallel")
             return None
 
         if v_len(AB_ - CD_) > outofplane_tol:
@@ -435,7 +432,7 @@ class Connections(BaseCollections):
 
         from ada import Node
 
-        def eval_node(ab, bm2, n1=True):
+        def eval_node(ab, n1=True):
             n = Node(ab)
             n_old = self._parent.nodes.add(n)
 
@@ -445,18 +442,17 @@ class Connections(BaseCollections):
             if n.id not in [bm2.n1.id, bm2.n2.id]:
                 if n1 is True:
                     bm2.n1 = n
-                    bm2.original_n1.Free = False
+                    bm2.n1.Free = False
                 else:
                     bm2.n2 = n
-                    bm2.original_n2.Free = False
+                    bm2.n2.Free = False
             else:
-                pass
-                # logger.debug('Midnode on n1')
+                logging.debug("Midnode on n1")
 
         if t_ <= 0:
-            eval_node(AB_, bm2, n1=True)
+            eval_node(AB_, n1=True)
         elif t_ >= 1:
-            eval_node(AB_, bm2, n1=False)
+            eval_node(AB_, n1=False)
         else:
             raise ValueError('bm1 "{}", bm2 "{}", t: "{}"'.format(bm1.id, bm2.id, t_))
 
@@ -471,7 +467,6 @@ class Materials(BaseCollections):
     """
 
     def __init__(self, materials=None, unique_ids=True, parent=None, units="m"):
-
         super().__init__(parent)
         self._materials = sorted(materials, key=attrgetter("name")) if materials is not None else []
         self._unique_ids = unique_ids
@@ -514,10 +509,13 @@ class Materials(BaseCollections):
         return f"Materials({rpr.repr(self._materials) if self._materials else ''})"
 
     def index(self, item):
-        index = bisect_left(self._materials, item)
-        if (index != len(self._materials)) and (self._materials[index] == item):
-            return index
-        raise ValueError(f"{repr(item)} not found")
+        """
+
+        :param item:
+        :type item: ada.Material
+        :return:
+        """
+        return self._materials.index(item)
 
     def count(self, item):
         return int(item in self)
@@ -693,6 +691,10 @@ class Sections:
         """
         if section.name is None:
             raise Exception("Name is not allowed to be None.")
+
+        # Note: Evaluate if parent should be "Sections" not Part object?
+        if section.parent is None:
+            section.parent = self._parent
 
         if section.name in self._nmap.keys():
             return self._nmap[section.name]
@@ -962,7 +964,7 @@ class Nodes:
             old_node = self._nodes[index]
             vlen = vector_length(old_node.p - node.p)
             if vlen < point_tol:
-                logger.debug(f'Replaced new node with node id "{self._nodes[index].id}" found within point tolerances')
+                logging.debug(f'Replaced new node with node id "{self._nodes[index].id}" found within point tolerances')
                 return self._nodes[index]
             else:
                 insert_node(node, index)
