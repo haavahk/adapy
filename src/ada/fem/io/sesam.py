@@ -1096,7 +1096,7 @@ USER:     {user}            ACCOUNT:     \n"""
                             "GIORH",
                             [
                                 (secid, section.h, section.t_w, section.w_top),
-                                (section.t_ftop, section.w_top, section.t_ftop, p.Sfy),
+                                (section.t_ftop, section.w_btn, section.t_fbtn, p.Sfy),
                                 (p.Sfz,),
                             ],
                         )

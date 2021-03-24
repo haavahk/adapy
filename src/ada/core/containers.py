@@ -410,17 +410,11 @@ class Connections(BaseCollections):
         CD_ = C + t * CD
 
         t_ = roundoff(t)
-        if 0 <= t_ <= 1:
-            if t_ == 0 or t_ == 1:
-                pass
-            else:
-                # This indicates that the beams are most probably parallel
-                # logger.debug(bm1.ID, bm2.ID, t, 'whats going on')
-                return
-
+        if 0 < t_ < 1:
+            return None
         if p_check(AB, CD):
             # logger.debug('beams', bm1.ID, bm2.ID, 'are parallel')
-            return
+            return None
 
         if v_len(AB_ - CD_) > outofplane_tol:
             return None
