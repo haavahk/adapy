@@ -698,9 +698,11 @@ class Sections:
 
         if section.name in self._nmap.keys():
             return self._nmap[section.name]
+
         if section.id is None or section.id in self._idmap.keys():
             new_sec_id = len(self._sections) + 1
             section.edit(sec_id=new_sec_id)
+
         self._sections.append(section)
         self._idmap[section.id] = section
         self._nmap[section.name] = section

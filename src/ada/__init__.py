@@ -20,8 +20,7 @@ from .core.utils import (
     unit_vector,
     vector_length,
 )
-from .fem import FEM, Elem, FemSet
-from .fem.io.utils import femio
+from .fem import FEM, Elem, FemSet, io
 from .materials.metals import CarbonSteel
 from .sections import GeneralProperties, SectionCat
 
@@ -389,9 +388,9 @@ class Part(BackendGeom):
                 shps += extract_subshapes(read_step_file(stp_file))
             return shps
 
-        def extract_subshapes(shp):
+        def extract_subshapes(shp_):
             s = []
-            t = TopologyExplorer(shp)
+            t = TopologyExplorer(shp_)
             for solid in t.solids():
                 s.append(solid)
             return s
@@ -417,7 +416,7 @@ class Part(BackendGeom):
                 ada_shape = Shape(ada_name + "_" + str(i), shp, colour, opacity, units=units)
                 self.add_shape(ada_shape)
 
-    def create_objects_from_fem(self):
+    def create_objects_from_fem(self, skip_plates=False, skip_beams=False):
         """
         Build Beams and PLates from the contents of the local FEM object
 
@@ -501,10 +500,12 @@ class Part(BackendGeom):
             :param p:
             :type p: Part
             """
-            p._plates = Plates(
-                list(chain.from_iterable([convert_shell_elements_to_object(sh, p) for sh in p.fem.elements.shell]))
-            )
-            p._beams = Beams([elem_to_beam(bm, p) for bm in p.fem.elements.beams])
+            if skip_plates is False:
+                p._plates = Plates(
+                    list(chain.from_iterable([convert_shell_elements_to_object(sh, p) for sh in p.fem.elements.shell]))
+                )
+            if skip_beams is False:
+                p._beams = Beams([elem_to_beam(bm, p) for bm in p.fem.elements.beams])
 
         if type(self) is Assembly:
             for p_ in self.get_all_parts_in_assembly():
@@ -1138,7 +1139,7 @@ class Assembly(Part):
                         logging.debug(f'Shape "{product.Name}" was added below Assembly Level -> No owner found')
         print(f'Import of IFC file "{ifc_file}" is complete')
 
-    @femio
+    @io.femio
     def read_fem(
         self,
         fem_file,
@@ -1170,7 +1171,7 @@ class Assembly(Part):
 
         convert_func(self, fem_file, fem_name)
 
-    @femio
+    @io.femio
     def to_fem(
         self,
         name,
