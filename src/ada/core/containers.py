@@ -409,6 +409,7 @@ class Connections(BaseCollections):
         if 0 < t_ < 1:
             logging.debug(f"Beam cross-check indicates that the beams {bm1} and {bm2} are most probably parallel")
             return None
+
         if p_check(AB, CD):
             logging.debug(f"beams {bm1} {bm2} are parallel")
             return None

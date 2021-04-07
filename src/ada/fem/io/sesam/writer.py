@@ -211,7 +211,7 @@ USER:     {user}            ACCOUNT:     \n"""
                             "GIORH",
                             [
                                 (secid, section.h, section.t_w, section.w_top),
-                                (section.t_ftop, section.w_top, section.t_ftop, p.Sfy),
+                                (section.t_ftop, section.w_btn, section.t_fbtn, p.Sfy),
                                 (p.Sfz,),
                             ],
                         )
@@ -235,6 +235,11 @@ USER:     {user}            ACCOUNT:     \n"""
                         sec_str += self.write_ff(
                             "GPIPE",
                             [(secid, section.r - section.wt, section.r, section.wt), (p.Sfy, p.Sfz)],
+                        )
+                    elif SectionCat.is_flatbar(section.type):
+                        sec_str += self.write_ff(
+                            "GBARM",
+                            [(secid, section.h, section.w_top, section.w_btn), (p.Sfy, p.Sfz)]
                         )
                     else:
                         logging.error(f'Unable to convert "{section}". This will be exported as general section only')
