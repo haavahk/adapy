@@ -535,7 +535,7 @@ class Part(BackendGeom):
             if res is not None:
                 obj.n2 = res
 
-            elem = Elem(None, [obj.n1, obj.n2], el_type)
+            elem = Elem(None, [obj.n1, obj.n2], el_type, metadata=obj.metadata)
             self.fem.add_elem(elem)
             femset = FemSet(f"{obj.name}_set", [elem.id], "elset")
             self.fem.add_set(femset)
