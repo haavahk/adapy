@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 
 from . import constants as co
@@ -112,6 +114,7 @@ class ElemShapes:
     quad8 = ["S8", "S8R"]
     quad6 = ["STRI65"]
     shell = tri + quad + quad8 + quad6
+    shell_ = {3: tri, 4: quad, 6: quad6, 8: quad8}
     cube8 = ["C3D8", "C3D8R", "C3D8H"]
     cube20 = ["C3D20", "C3D20R", "C3D20RH"]
     cube27 = ["C3D27"]
@@ -123,6 +126,7 @@ class ElemShapes:
     volume = cube8 + cube20 + pyramid10 + pyramid4 + pyramid5 + prism15 + prism6
     bm2 = ["B31", "B32"]
     beam = bm2
+    beam_ = {2: beam[0], 3: beam[1]}
     spring1n = ["SPRING1"]
     spring2n = ["SPRING2"]
     springs = spring1n + spring2n
@@ -157,6 +161,20 @@ class ElemShapes:
             return 27
         else:
             raise ValueError(f'element type "{el_name}" is not yet supported')
+
+    def change_type(self, num_nodes):
+        if self.type in ElemShapes.beam and num_nodes in self.beam_.keys():
+            self.type = self.beam_[num_nodes]
+        elif self.type in self.shell and num_nodes in self.shell_.keys():
+            if self.type == "S4R":
+                self.type = "S3"
+            else:
+                for v in self.shell_.values():
+                    if self.type in v:
+                        i = v.index(self.type)
+                        self.type = self.shell_[num_nodes][i]
+        else:
+            logging.error(f'Did not change type. Type: {self.type}, num nodes: {num_nodes}')
 
     def __init__(self, el_type):
         self.type = el_type
@@ -1401,6 +1419,11 @@ class Elem(FemBase, ElemShapes):
 
     @property
     def nodes(self):
+        """
+
+        :return:
+        :rtype: list
+        """
         return self._nodes
 
     @property
