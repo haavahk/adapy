@@ -124,6 +124,13 @@ class Backend:
                 break
         return parent
 
+    def _get_context_owner(self):
+        a = self.parent.get_assembly()
+        f = a.ifc_file
+        context = f.by_type("IfcGeometricRepresentationContext")[0]
+        owner_history = a.user.to_ifc()
+        return a, f, context, owner_history
+
     def remove(self):
         """
         Remove this element/part from assembly/part

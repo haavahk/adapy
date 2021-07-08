@@ -1828,11 +1828,7 @@ class Beam(BackendGeom):
         if self.parent is None:
             raise ValueError("Parent cannot be None for IFC export")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         parent = self.parent.ifc_elem
 
         if Settings.include_ecc and self.e1 is not None:
@@ -2455,11 +2451,7 @@ class Plate(BackendGeom):
         if self.parent is None:
             raise ValueError("Ifc element cannot be built without any parent element")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         parent = self.parent.ifc_elem
 
         xvec = self.poly.xdir
@@ -3076,11 +3068,7 @@ class PipeSegStraight(BackendGeom):
         if self.parent is None:
             raise ValueError("Parent cannot be None for IFC export")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
 
         p1 = self.p1
         p2 = self.p2
@@ -3269,11 +3257,7 @@ class PipeSegElbow(BackendGeom):
         if self.parent is None:
             raise ValueError("Parent cannot be None for IFC export")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         schema = a.ifc_file.wrapped_data.schema
 
         if _Settings.make_param_elbows is False:
@@ -3449,11 +3433,7 @@ class Wall(BackendGeom):
         if self.parent is None:
             raise ValueError("Ifc element cannot be built without any parent element")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         parent = self.parent.ifc_elem
         elevation = self.origin[2]
 
@@ -3529,11 +3509,7 @@ class Wall(BackendGeom):
         from ada.core.constants import O, X, Z
         from ada.core.ifc_utils import create_local_placement
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         schema = a.ifc_file.wrapped_data.schema
 
         # Create a simplified representation for the Window
@@ -3915,11 +3891,7 @@ class Shape(BackendGeom):
         if self.parent is None:
             raise ValueError("Parent cannot be None for IFC export")
 
-        a = self.parent.get_assembly()
-        f = a.ifc_file
-
-        context = f.by_type("IfcGeometricRepresentationContext")[0]
-        owner_history = a.user.to_ifc()
+        a, f, context, owner_history = self._get_context_owner()
         parent = self.parent.ifc_elem
         schema = a.ifc_file.wrapped_data.schema
 
