@@ -5427,11 +5427,7 @@ class Weld(Backend):
         if self.parent is None:
             raise ValueError("Parent cannot be None for IFC export")
 
-        # a = self.parent.get_assembly()
-        # f = a.ifc_file
-
-        # context = f.by_type("IfcGeometricRepresentationContext")[0]
-        # owner_history = f.by_type("IfcOwnerHistory")[0]
+        # a, f, context, owner_history = self._get_context_owner()
         # parent = self.parent.ifc_elem
 
         # ifc_fastener = f.createIfcFastener()
