@@ -3090,7 +3090,6 @@ def replace_node(old_node, new_node):
         elem.nodes.pop(node_index)
         elem.nodes.insert(node_index, new_node)
         elem.update()
-        # new_node.refs.extend(old_node.refs)
         old_node.refs.pop(old_node.refs.index(elem))
         new_node.refs.append(elem)
         logging.debug(f"{old_node} exchanged with {new_node} --> {elem}")

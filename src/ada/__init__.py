@@ -3987,10 +3987,7 @@ class Shape(BackendGeom):
 
     @property
     def transparent(self):
-        if self.opacity == 1.0:
-            return False
-        else:
-            return True
+        return False if self.opacity == 1.0 else True
 
     @property
     def opacity(self):
