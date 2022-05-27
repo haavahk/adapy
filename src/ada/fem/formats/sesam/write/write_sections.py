@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import List, Tuple, Union
 
 from ada import FEM, Beam, Section
 from ada.core.utils import Counter, make_name_fem_ready
@@ -68,7 +67,7 @@ def create_shell_section_str(fem_sec: FemSection, thick_map) -> str:
     return write_ff("GELTH", [(sh_id, fem_sec.thickness, 5)])
 
 
-def create_line_section(fem_sec: FemSection, sec_names: List[str], sec_ids: List[Section]) -> Union[ConceptSection, None]:
+def create_line_section(fem_sec: FemSection, sec_names: list[str], sec_ids: list[Section]) -> ConceptSection:
     from .write_bm_profiles import write_bm_section
 
     sec = fem_sec.section
@@ -92,9 +91,7 @@ def create_line_section(fem_sec: FemSection, sec_names: List[str], sec_ids: List
         ],
     )
     sec_str = write_bm_section(sec, sec.id)
-    return ConceptSection(
-        sec_str=sec_str, names_str=names_str
-    )
+    return ConceptSection(sec_str=sec_str, names_str=names_str)
 
 
 def create_solid_section(fem_sec: FemSection):
@@ -125,7 +122,7 @@ def create_sconcept_str(fem_sec: FemSection) -> ConceptStructure:
 
     sconcept_str += write_ff("SCONCEPT", [(8, ircon, 7, 0), (0, 1, 0, ircon_mesh)])
     sconcept_str += write_ff("SCONCEPT", [(5, ircon_mesh, 2, 4), (ircon,)])
-    elids: List[tuple] = []
+    elids: list[tuple] = []
     i = 0
 
     numel = len(beam.elem_refs)

@@ -29,7 +29,7 @@ def orientations_str(fem: FEM, written_on_assembly_level: bool) -> str:
 
 
 def csys_str(csys: Csys, written_on_assembly_level: bool):
-    """"""
+    """ """
     name = csys.name
 
     def f(num: float) -> str:

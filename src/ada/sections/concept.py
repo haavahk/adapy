@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, List, Tuple, Union
 from ada.base.non_phyical_objects import Backend
 from ada.concepts.curves import CurvePoly
 from ada.config import Settings
-
 from ada.sections.categories import BaseTypes, SectionCat
 
 if TYPE_CHECKING:
@@ -86,7 +85,8 @@ class Section(Backend):
             self._genprops = genprops
         prop = self.properties
         if None in (prop.Cy, prop.Cz) and self.type != Section.TYPES.GENERAL:
-            logging.warning('Attribute Cy and Cz is missing from instance of Properties')
+            logging.warning("Attribute Cy and Cz is missing from instance of Properties")
+
     # def __eq__(self, other: Section):
     #     props_equal = self.equal_props(other)
     #     if props_equal is False:
@@ -343,6 +343,7 @@ class GeneralProperties:
     def calc_parent_properties(self) -> GeneralProperties:
         """Returns calculated properties based on parent section"""
         from ada.sections.properties import calculate_general_properties
+
         return calculate_general_properties(self.parent)
 
 

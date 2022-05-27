@@ -70,7 +70,7 @@ def curve_f3(x, a, b):
 
 def curve_f4(x, a, b, c):
     """And yet another base function for use in curve fitting"""
-    return a * x**3 + b * x**2 + c * x
+    return a * x ** 3 + b * x ** 2 + c * x
 
 
 def sum_of_squared_error(parameter_tuple, *args):
