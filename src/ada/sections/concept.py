@@ -83,9 +83,9 @@ class Section(Backend):
         if genprops is not None:
             genprops.parent = self
             self._genprops = genprops
-        # prop = self.properties
-        # if None in (prop.Cy, prop.Cz) and self.type != Section.TYPES.GENERAL:
-        #     logging.warning("Attribute Cy and Cz is missing from instance of Properties")
+        prop = self.properties
+        if None in (prop.Cy, prop.Cz) and self.type != Section.TYPES.GENERAL:
+            logging.warning("Attribute Cy and Cz is missing from instance of Properties")
 
     # def __eq__(self, other: Section):
     #     props_equal = self.equal_props(other)
@@ -123,8 +123,14 @@ class Section(Backend):
         return tuple([getattr(self, p) for p in props])
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self._type
+
+    @type.setter
+    def type(self, value: str):
+        if type(value) is not str:
+            raise ValueError
+        self._type = value
 
     @property
     def id(self):
