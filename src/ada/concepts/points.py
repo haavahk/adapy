@@ -107,7 +107,7 @@ class Node:
         self._parent = value
 
     @property
-    def refs(self) -> List[Union[Elem, Beam, Csys]]:
+    def refs(self) -> list[Union[Elem, Beam, Csys]]:
         return self._refs
 
     @property
