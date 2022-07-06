@@ -127,7 +127,7 @@ class Beams(BaseCollections):
                 end_nds.append(beam.n1 if node_without_connected_beam in beam.n2.refs else beam.n2)
             return end_nds
 
-        def modify_beam(bm: Beam, new_nodes) -> Beam:
+        def modify_beam(bm: Beam, new_nodes: list[Node]) -> Beam:
             n1, n2 = new_nodes
 
             n1_2_n2_vector = unit_vector(n2.p - n1.p)
@@ -143,12 +143,13 @@ class Beams(BaseCollections):
 
         if len(list(beam_segments)) > 1:
             end_nodes = get_end_nodes()
-            modified_beam = modify_beam(beam_segments[0], end_nodes)
+            if len(end_nodes) > 0:  # indicates overlapping beams
+                modified_beam = modify_beam(beam_segments[0], end_nodes)
 
-            for old_beam in beam_segments[1:]:
-                self.remove(old_beam)
+                for old_beam in beam_segments[1:]:
+                    self.remove(old_beam)
 
-            return modified_beam
+                return modified_beam
 
     def set_connected_beams_map(self) -> None:
         self._connected_beams_map = {beam: beam.get_beam_extensions() for beam in self._beams}
