@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import List, Tuple, Union
+from typing import Union, TYPE_CHECKING
 
-from ada import FEM, Assembly, Beam, Part, Pipe, Plate, Shape, Wall
 from ada.fem.shapes import ElemType
+
+if TYPE_CHECKING:
+    from ada import FEM, Assembly, Beam, Part, Pipe, Plate, Shape, Wall
 
 
 class Renderer(Enum):
@@ -17,9 +19,9 @@ class Renderer(Enum):
 
 @dataclass
 class Camera:
-    target: Tuple[float, float, float] = (0, 0, 0)
-    origin: Tuple[float, float, float] = (3, 3, 0)
-    up: Tuple[float, float, float] = (0, 0, 1)
+    target: tuple[float, float, float] = (0, 0, 0)
+    origin: tuple[float, float, float] = (3, 3, 0)
+    up: tuple[float, float, float] = (0, 0, 1)
     fov: float = 55.0
 
 
@@ -28,12 +30,8 @@ class Visualize:
     parent: Union[Assembly, Part, Beam, Plate, Wall, Shape, Pipe, FEM] = None
     renderer: Renderer = Renderer.PYVISTA
     camera: Camera = Camera()
-    objects: List[VizObj] = None
+    objects: list[VizObj] = field(default_factory=list)
     edge_color = (32, 32, 32)
-
-    def __post_init__(self):
-        if self.objects is None:
-            self.objects = []
 
     def add_obj(self, obj: Union[Assembly, Part, Beam, Plate, Wall, Shape, Pipe, FEM], geom_repr: str = ElemType.SOLID):
 
