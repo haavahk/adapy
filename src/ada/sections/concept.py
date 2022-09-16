@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import logging
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Tuple, Union
+from dataclasses import dataclass, field, KW_ONLY
+from typing import TYPE_CHECKING, List, Tuple, Union, Iterable
 
 from ada.base.non_physical_objects import Backend
 from ada.concepts.curves import CurvePoly
@@ -14,184 +15,312 @@ if TYPE_CHECKING:
     from ada.fem import FemSection
 
 
+@dataclass
+class Profile(ABC):
+    """Section profile data"""
+
+    @property
+    def sec_str_formatting(self) -> str:
+        return "x".join(self.sec_str_vars)
+
+    @property
+    @abstractmethod
+    def sec_str_vars(self) -> Iterable:
+        """Section string variables"""
+
+    @property
+    @abstractmethod
+    def base_type(self) -> str:
+        """Returns the profile base type"""
+
+
+    @property
+    def sec_str(self) -> str:
+        """Returns profile section string"""
+        return self.base_type + self.sec_str_formatting
+
+
+@dataclass
+class CircularProfile(Profile):
+    r: float
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.CIRCULAR
+
+    @property
+    def sec_str_vars(self) -> Iterable:
+        return (self.r,)
+
+
+@dataclass
+class TubularProfile(CircularProfile):
+    t: float
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.TUBULAR
+
+    @property
+    def sec_str_vars(self) -> Iterable:
+        return self.r, self.t
+
+
+@dataclass
+class FlatbarProfile(Profile):
+    """Flatbar profile"""
+    h: float
+    w_top: float
+    w_btn: float
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.FLATBAR
+
+    @property
+    def sec_str_vars(self) -> Iterable:
+        return self.h, self.w_top
+
+
+@dataclass
+class BoxProfile(FlatbarProfile):
+    t_w: float
+    t_ftop: float
+    t_fbtn: float
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.BOX
+
+    @property
+    def sec_str_vars(self) -> Iterable:
+        return *super(BoxProfile, self).sec_str_vars, self.t_w, self.t_ftop
+
+
+@class ChannelProfile(Profile):
+    h: float
+    w_btn: float
+    t_w: float
+    t_fbtn: float
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.CHANNEL
+
+    @property
+    def sec_str_vars(self) -> Iterable:
+        return (self.h,)
+
+
+@dataclass
+class IProfile(BoxProfile):
+    """I-Profile"""
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.IPROFILE
+
+
+@dataclass
+class TProfile(BoxProfile):
+    """T-Profile"""
+
+    @property
+    def base_type(self) -> str:
+        return BaseTypes.TPROFILE
+
+
+@dataclass
+class LProfile(Profile):
+    """L-Profile"""
+
+
+@dataclass
 class Section(Backend):
-    TYPES = BaseTypes
+    id: int
+    profile: Profile
+    properties: GeneralProperties
+    _: KW_ONLY
+    # sec_str: str = field(default_factory=str)
+    refs: list[Beam | FemSection] = field(default_factory=list)
 
-    def __init__(
-        self,
-        name,
-        sec_type=None,
-        h=None,
-        w_top=None,
-        w_btn=None,
-        t_w=None,
-        t_ftop=None,
-        t_fbtn=None,
-        r=None,
-        wt=None,
-        sec_id=None,
-        parent=None,
-        sec_str=None,
-        from_str=None,
-        outer_poly=None,
-        inner_poly=None,
-        genprops: GeneralProperties = None,
-        metadata=None,
-        units="m",
-        ifc_elem=None,
-        guid=None,
-        refs=None,
-    ):
-        super(Section, self).__init__(name, guid, metadata, units, ifc_elem=ifc_elem, parent=parent)
-        self._type = sec_type
-        self._h = h
-        self._w_top = w_top
-        self._w_btn = w_btn
-        self._t_w = t_w
-        self._t_ftop = t_ftop
-        self._t_fbtn = t_fbtn
-        self._r = r
-        self._wt = wt
-        self._id = sec_id
-        self._outer_poly = outer_poly
-        self._inner_poly = inner_poly
-        self._sec_str = sec_str
+    # TYPES = BaseTypes
 
-        self._ifc_profile = None
-        self._ifc_beam_type = None
+    # def __init__(
+    #     self,
+    #     name,
+    #     sec_type=None,
+    #     h=None,
+    #     w_top=None,
+    #     w_btn=None,
+    #     t_w=None,
+    #     t_ftop=None,
+    #     t_fbtn=None,
+    #     r=None,
+    #     wt=None,
+    #     sec_id=None,
+    #     parent=None,
+    #     sec_str=None,
+    #     from_str=None,
+    #     outer_poly=None,
+    #     inner_poly=None,
+    #     genprops: GeneralProperties = None,
+    #     metadata=None,
+    #     units="m",
+    #     ifc_elem=None,
+    #     guid=None,
+    #     refs=None,
+    # ):
+    #     super(Section, self).__init__(name, guid, metadata, units, ifc_elem=ifc_elem, parent=parent)
+    #     self._type = sec_type
+    #     self._h = h
+    #     self._w_top = w_top
+    #     self._w_btn = w_btn
+    #     self._t_w = t_w
+    #     self._t_ftop = t_ftop
+    #     self._t_fbtn = t_fbtn
+    #     self._r = r
+    #     self._wt = wt
+    #     self._id = sec_id
+    #     self._outer_poly = outer_poly
+    #     self._inner_poly = inner_poly
+    #     self._sec_str = sec_str
+    #
+    #     self._ifc_profile = None
+    #     self._ifc_beam_type = None
+    #
+    #     if ifc_elem is not None:
+    #         props = self._import_from_ifc_profile(ifc_elem)
+    #         self.__dict__.update(props.__dict__)
+    #
+    #     if from_str is not None:
+    #         from ada.sections.utils import interpret_section_str
+    #
+    #         if units == "m":
+    #             scalef = 0.001
+    #         elif units == "mm":
+    #             scalef = 1.0
+    #         else:
+    #             raise ValueError(f'Unknown units "{units}"')
+    #         sec, tap = interpret_section_str(from_str, scalef, units=units)
+    #         self.__dict__.update(sec.__dict__)
+    #     elif outer_poly:
+    #         self._type = "poly"
+    #
+    #     self._genprops = None
+    #     self._refs = refs if refs is not None else []
+    #     if genprops is not None:
+    #         genprops.parent = self
+    #         self._genprops = genprops
+    #     # prop = self.properties
+    #     # if None in (prop.Cy, prop.Cz) and self.type != Section.TYPES.GENERAL:
+    #     #     logging.warning("Attribute Cy and Cz is missing from instance of Properties")
+    #
+    # # def __eq__(self, other: Section):
+    # #     props_equal = self.equal_props(other)
+    # #     if props_equal is False:
+    # #         return False
+    # #     if other.name != self.name:
+    # #         return False
+    # #
+    # #     return True
 
-        if ifc_elem is not None:
-            props = self._import_from_ifc_profile(ifc_elem)
-            self.__dict__.update(props.__dict__)
-
-        if from_str is not None:
-            from ada.sections.utils import interpret_section_str
-
-            if units == "m":
-                scalef = 0.001
-            elif units == "mm":
-                scalef = 1.0
-            else:
-                raise ValueError(f'Unknown units "{units}"')
-            sec, tap = interpret_section_str(from_str, scalef, units=units)
-            self.__dict__.update(sec.__dict__)
-        elif outer_poly:
-            self._type = "poly"
-
-        self._genprops = None
-        self._refs = refs if refs is not None else []
-        if genprops is not None:
-            genprops.parent = self
-            self._genprops = genprops
-        # prop = self.properties
-        # if None in (prop.Cy, prop.Cz) and self.type != Section.TYPES.GENERAL:
-        #     logging.warning("Attribute Cy and Cz is missing from instance of Properties")
-
-    # def __eq__(self, other: Section):
-    #     props_equal = self.equal_props(other)
-    #     if props_equal is False:
-    #         return False
-    #     if other.name != self.name:
-    #         return False
+    # def _generate_ifc_section_data(self):
+    #     from ada.ifc.write.write_sections import export_beam_section
+    #
+    #     return export_beam_section(self)
+    #
+    # def _import_from_ifc_profile(self, ifc_elem):
+    #     from ada.ifc.read.read_beam_section import import_section_from_ifc
+    #
+    #     self._ifc_profile = ifc_elem
+    #     return import_section_from_ifc(ifc_elem)
+    #
+    # def equal_props(self, other: Section):
+    #     props = ["type", "h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt", "poly_outer", "poly_inner"]
+    #     if self.type == self.TYPES.GENERAL:
+    #         props += ["properties"]
+    #
+    #     for propa, propb in zip(self.unique_props(), other.unique_props()):
+    #         if propa != propb:
+    #             return False
     #
     #     return True
+    #
+    # def unique_props(self):
+    #     props = ["type", "h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt", "poly_outer", "poly_inner"]
+    #     return tuple([getattr(self, p) for p in props])
+    #
+    # @property
+    # def type(self):
+    #     return self._type
 
-    def _generate_ifc_section_data(self):
-        from ada.ifc.write.write_sections import export_beam_section
+    # @property
+    # def id(self):
+    #     return self._id
+    #
+    # @id.setter
+    # def id(self, value):
+    #     if type(value) is not int:
+    #         raise ValueError
+    #     self._id = value
 
-        return export_beam_section(self)
-
-    def _import_from_ifc_profile(self, ifc_elem):
-        from ada.ifc.read.read_beam_section import import_section_from_ifc
-
-        self._ifc_profile = ifc_elem
-        return import_section_from_ifc(ifc_elem)
-
-    def equal_props(self, other: Section):
-        props = ["type", "h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt", "poly_outer", "poly_inner"]
-        if self.type == self.TYPES.GENERAL:
-            props += ["properties"]
-
-        for propa, propb in zip(self.unique_props(), other.unique_props()):
-            if propa != propb:
-                return False
-
-        return True
-
-    def unique_props(self):
-        props = ["type", "h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt", "poly_outer", "poly_inner"]
-        return tuple([getattr(self, p) for p in props])
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, value):
-        if type(value) is not int:
-            raise ValueError
-        self._id = value
-
-    @property
-    def h(self):
-        return self._h
-
-    @property
-    def w_top(self):
-        return self._w_top
-
-    @w_top.setter
-    def w_top(self, value):
-        """Width of top flange"""
-        self._w_top = value
-
-    @property
-    def w_btn(self):
-        """Width of bottom flange"""
-        return self._w_btn
-
-    @w_btn.setter
-    def w_btn(self, value):
-        self._w_btn = value
-
-    @property
-    def t_w(self):
-        """Thickness of web"""
-        return self._t_w
-
-    @property
-    def t_ftop(self):
-        """Thickness of top flange"""
-        return self._t_ftop
-
-    @property
-    def t_fbtn(self):
-        """Thickness of bottom flange"""
-        return self._t_fbtn
-
-    @property
-    def r(self) -> float:
-        """Radius (Outer)"""
-        return self._r
-
-    @r.setter
-    def r(self, value: float):
-        self._r = value
-        self._genprops = None
-
-    @property
-    def wt(self) -> float:
-        """Wall thickness"""
-        return self._wt
-
-    @wt.setter
-    def wt(self, value: float):
-        self._wt = value
-        self._genprops = None
+    # @property
+    # def h(self):
+    #     return self._h
+    #
+    # @property
+    # def w_top(self):
+    #     return self._w_top
+    #
+    # @w_top.setter
+    # def w_top(self, value):
+    #     """Width of top flange"""
+    #     self._w_top = value
+    #
+    # @property
+    # def w_btn(self):
+    #     """Width of bottom flange"""
+    #     return self._w_btn
+    #
+    # @w_btn.setter
+    # def w_btn(self, value):
+    #     self._w_btn = value
+    #
+    # @property
+    # def t_w(self):
+    #     """Thickness of web"""
+    #     return self._t_w
+    #
+    # @property
+    # def t_ftop(self):
+    #     """Thickness of top flange"""
+    #     return self._t_ftop
+    #
+    # @property
+    # def t_fbtn(self):
+    #     """Thickness of bottom flange"""
+    #     return self._t_fbtn
+    #
+    # @property
+    # def r(self) -> float:
+    #     """Radius (Outer)"""
+    #     return self._r
+    #
+    # @r.setter
+    # def r(self, value: float):
+    #     self._r = value
+    #     self._genprops = None
+    #
+    # @property
+    # def wt(self) -> float:
+    #     """Wall thickness"""
+    #     return self._wt
+    #
+    # @wt.setter
+    # def wt(self, value: float):
+    #     self._wt = value
+    #     self._genprops = None
 
     @property
     def sec_str(self):
@@ -229,42 +358,42 @@ class Section(Backend):
 
         return self._genprops
 
-    @property
-    def units(self):
-        return self._units
+    # @property
+    # def units(self):
+    #     return self._units
+    #
+    # @units.setter
+    # def units(self, value):
+    #     if self._units != value:
+    #         from ada.core.utils import unit_length_conversion
+    #
+    #         scale_factor = unit_length_conversion(self._units, value)
+    #
+    #         if self.poly_inner is not None:
+    #             self.poly_inner.scale(scale_factor, Settings.point_tol)
+    #
+    #         if self.poly_outer is not None:
+    #             self.poly_outer.scale(scale_factor, Settings.point_tol)
+    #
+    #         vals = ["h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt"]
+    #
+    #         for key in self.__dict__.keys():
+    #             if self.__dict__[key] is not None:
+    #                 if key[1:] in vals:
+    #                     self.__dict__[key] *= scale_factor
+    #         self._units = value
 
-    @units.setter
-    def units(self, value):
-        if self._units != value:
-            from ada.core.utils import unit_length_conversion
-
-            scale_factor = unit_length_conversion(self._units, value)
-
-            if self.poly_inner is not None:
-                self.poly_inner.scale(scale_factor, Settings.point_tol)
-
-            if self.poly_outer is not None:
-                self.poly_outer.scale(scale_factor, Settings.point_tol)
-
-            vals = ["h", "w_top", "w_btn", "t_w", "t_ftop", "t_fbtn", "r", "wt"]
-
-            for key in self.__dict__.keys():
-                if self.__dict__[key] is not None:
-                    if key[1:] in vals:
-                        self.__dict__[key] *= scale_factor
-            self._units = value
-
-    @property
-    def ifc_profile(self):
-        if self._ifc_profile is None:
-            self._ifc_profile, self._ifc_beam_type = self._generate_ifc_section_data()
-        return self._ifc_profile
-
-    @property
-    def ifc_beam_type(self):
-        if self._ifc_beam_type is None:
-            self._ifc_profile, self._ifc_beam_type = self._generate_ifc_section_data()
-        return self._ifc_beam_type
+    # @property
+    # def ifc_profile(self):
+    #     if self._ifc_profile is None:
+    #         self._ifc_profile, self._ifc_beam_type = self._generate_ifc_section_data()
+    #     return self._ifc_profile
+    #
+    # @property
+    # def ifc_beam_type(self):
+    #     if self._ifc_beam_type is None:
+    #         self._ifc_profile, self._ifc_beam_type = self._generate_ifc_section_data()
+    #     return self._ifc_beam_type
 
     @property
     def poly_outer(self) -> CurvePoly:
@@ -287,9 +416,9 @@ class Section(Backend):
         fig, html = sec_render.build_display(self)
         display(HBox([fig, html]))
 
-    @property
-    def refs(self) -> List[Union[Beam, FemSection]]:
-        return self._refs
+    # @property
+    # def refs(self) -> List[Union[Beam, FemSection]]:
+    #     return self._refs
 
     def __hash__(self):
         return hash(self.guid)
@@ -299,7 +428,7 @@ class Section(Backend):
             return f"Section({self.name}, {self.type}, r: {self.r}, wt: {self.wt})"
         elif self.type in SectionCat.general:
             p = self.properties
-            return f"Section({self.name}, {self.type}, Ax: {p.Ax}, Ix: {p.Ix}, Iy: {p.Iy}, Iz: {p.Iz}, Iyz: {p.Iyz})"
+            return f"Section({self.name}, {self.type}, Ax: {p.area}, Ix: {p.ix}, Iy: {p.iy}, Iz: {p.iz}, Iyz: {p.iyz})"
         else:
             return (
                 f"Section({self.name}, {self.type}, h: {self.h}, w_btn: {self.w_btn}, "
@@ -316,24 +445,24 @@ class SectionParts:
 @dataclass
 class GeneralProperties:
     parent: Section = field(default=None, compare=False)
-    Ax: float = None
-    Ix: float = None
-    Iy: float = None
-    Iz: float = None
-    Iyz: float = None
-    Wxmin: float = None
-    Wymin: float = None
-    Wzmin: float = None
-    Shary: float = None
-    Sharz: float = None
-    Shceny: float = None
-    Shcenz: float = None
-    Sy: float = None
-    Sz: float = None
-    Sfy: float = 1
-    Sfz: float = 1
-    Cy: float = None
-    Cz: float = None
+    area: float = None
+    ix: float = None
+    iy: float = None
+    iz: float = None
+    iyz: float = None
+    wxmin: float = None
+    wymin: float = None
+    wzmin: float = None
+    shary: float = None
+    sharz: float = None
+    shceny: float = None
+    shcenz: float = None
+    sy: float = None
+    sz: float = None
+    sfy: float = 1
+    sfz: float = 1
+    cy: float = None
+    cz: float = None
 
     @property
     def modified(self) -> bool:
@@ -353,10 +482,10 @@ class SectionProfile:
     is_solid: bool
     outer_curve: CurvePoly = None
     inner_curve: CurvePoly = None
-    outer_curve_disconnected: List[CurvePoly] = None
-    inner_curve_disconnected: List[CurvePoly] = None
+    outer_curve_disconnected: list[CurvePoly] = None
+    inner_curve_disconnected: list[CurvePoly] = None
     disconnected: bool = None
-    shell_thickness_map: List[Tuple[str, float]] = None
+    shell_thickness_map: list[tuple[str, float]] = None
 
 
 def build_section_profile(sec: Section, is_solid) -> SectionProfile:
