@@ -1,45 +1,56 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
-from typing import TYPE_CHECKING, Iterable, List, Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
 from ada.config import Settings
 from ada.core.vector_utils import vector_length
 
+
 if TYPE_CHECKING:
     from ada import Beam
+    from ada.base.non_physical_objects import Units
     from ada.concepts.containers import Nodes
     from ada.fem import Bc, Csys, Elem
 
 numeric = Union[int, float, np.number]
 
 
+@dataclasses.dataclass(order=True)
 class Node:
     """Base node object"""
+    p: np.ndarray
+    id: int = None
+    bc: Bc = dataclasses.field(default=None, compare=False)
+    r: float = dataclasses.field(default=None, compare=False)
+    parent: dataclasses.MISSING = dataclasses.field(default=None, compare=False)
+    units: Units = dataclasses.field(default=None, compare=False)
+    refs: list[Elem | Beam | Csys] = dataclasses.field(default_factory=list, compare=False)
 
-    def __init__(
-        self, p: Iterable[numeric, numeric, numeric], nid=None, bc=None, r=None, parent=None, units="m", refs=None
-    ):
-        self._id = nid
-        self.p: np.ndarray = np.array([*p], dtype=np.float64) if type(p) != np.ndarray else p
-        if len(self.p) != 3:
-            raise ValueError("Node object must have exactly 3 coordinates (x, y, z).")
-
-        self._bc = bc
-        self._r = r
-        self._parent = parent
-        self._units = units
-        self._refs = [] if refs is None else refs
-
-    @property
-    def id(self) -> int:
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        self._id = value
+    # def __init__(
+    #     self, p: Iterable[numeric, numeric, numeric], nid=None, bc=None, r=None, parent=None, units="m", refs=None
+    # ):
+    #     self._id = nid
+    #     self.p: np.ndarray = np.array([*p], dtype=np.float64) if type(p) != np.ndarray else p
+    #     if len(self.p) != 3:
+    #         raise ValueError("Node object must have exactly 3 coordinates (x, y, z).")
+    #
+    #     self._bc = bc
+    #     self._r = r
+    #     self._parent = parent
+    #     self._units = units
+    #     self._refs = [] if refs is None else refs
+    #
+    # @property
+    # def id(self) -> int:
+    #     return self._id
+    #
+    # @id.setter
+    # def id(self, value: int):
+    #     self._id = value
 
     @property
     def x(self):
@@ -53,19 +64,19 @@ class Node:
     def z(self):
         return self.p[2]
 
-    @property
-    def bc(self) -> Bc:
-        return self._bc
+    # @property
+    # def bc(self) -> Bc:
+    #     return self._bc
+    #
+    # @bc.setter
+    # def bc(self, value: Bc):
+    #     self._bc = value
+    #
+    # @property
+    # def r(self) -> float:
+    #     return self._r
 
-    @bc.setter
-    def bc(self, value: Bc):
-        self._bc = value
-
-    @property
-    def r(self) -> float:
-        return self._r
-
-    def p_roundoff(self, scale_factor: Union[int, float] = 1, precision: int = Settings.precision) -> None:
+    def p_roundoff(self, scale_factor: numeric = 1, precision: int = Settings.precision) -> None:
         from ada.core.utils import roundoff
 
         self.p = np.array([roundoff(scale_factor * x, precision=precision) for x in self.p])
@@ -82,33 +93,33 @@ class Node:
         else:
             logging.debug(f"Item {item} is not in node refs {self}")
 
-    @property
-    def units(self):
-        return self._units
+    # @property
+    # def units(self):
+    #     return self._units
+    #
+    # @units.setter
+    # def units(self, value):
+    #     if value != self._units:
+    #         from ada.core.utils import unit_length_conversion
+    #
+    #         scale_factor = unit_length_conversion(self._units, value)
+    #         self.p_roundoff(scale_factor)
+    #
+    #         if self._r is not None:
+    #             self._r *= scale_factor
+    #         self._units = value
 
-    @units.setter
-    def units(self, value):
-        if value != self._units:
-            from ada.core.utils import unit_length_conversion
+    # @property
+    # def parent(self):
+    #     return self._parent
+    #
+    # @parent.setter
+    # def parent(self, value):
+    #     self._parent = value
 
-            scale_factor = unit_length_conversion(self._units, value)
-            self.p_roundoff(scale_factor)
-
-            if self._r is not None:
-                self._r *= scale_factor
-            self._units = value
-
-    @property
-    def parent(self):
-        return self._parent
-
-    @parent.setter
-    def parent(self, value):
-        self._parent = value
-
-    @property
-    def refs(self) -> List[Union[Elem, Beam, Csys]]:
-        return self._refs
+    # @property
+    # def refs(self) -> List[Union[Elem, Beam, Csys]]:
+    #     return self._refs
 
     @property
     def has_refs(self) -> bool:
@@ -127,30 +138,30 @@ class Node:
         else:
             return [self]
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self.p[index]
 
-    def __gt__(self, other):
-        return tuple(self.p) > tuple(other.p)
+    # def __gt__(self, other):
+    #     return tuple(self.p) > tuple(other.p)
+    #
+    # def __lt__(self, other):
+    #     return tuple(self.p) < tuple(other.p)
+    #
+    # def __ge__(self, other):
+    #     return tuple(self.p) >= tuple(other.p)
+    #
+    # def __le__(self, other):
+    #     return tuple(self.p) <= tuple(other.p)
+    #
+    # def __eq__(self, other: Node):
+    #     if not isinstance(other, Node):
+    #         return NotImplemented
+    #     return (*self.p, self.id) == (*other.p, other.id)
 
-    def __lt__(self, other):
-        return tuple(self.p) < tuple(other.p)
-
-    def __ge__(self, other):
-        return tuple(self.p) >= tuple(other.p)
-
-    def __le__(self, other):
-        return tuple(self.p) <= tuple(other.p)
-
-    def __eq__(self, other: Node):
-        if not isinstance(other, Node):
-            return NotImplemented
-        return (*self.p, self.id) == (*other.p, other.id)
-
-    def __ne__(self, other: Node):
-        if not isinstance(other, Node):
-            return NotImplemented
-        return (*self.p, self.id) != (*other.p, other.id)
+    # def __ne__(self, other: Node):
+    #     if not isinstance(other, Node):
+    #         return NotImplemented
+    #     return (*self.p, self.id) != (*other.p, other.id)
 
     def __hash__(self):
         return hash((*self.p, self.id))
