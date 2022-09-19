@@ -843,20 +843,20 @@ class SectionRenderer:
 
         sp = sec.properties
         for sec_prop in [
-            ("Ax", sp.Ax),
-            ("Ix", sp.Ix),
-            ("Iy", sp.Iy),
-            ("Iz", sp.Iz),
-            ("Iyz", sp.Iyz),
-            ("Wxmin", sp.Wxmin),
-            ("Wymin", sp.Wymin),
-            ("Wzmin", sp.Wzmin),
-            ("Sy", sp.Sy),
-            ("Sz", sp.Sz),
-            ("Shary", sp.Shary),
-            ("Sharz", sp.Sharz),
-            ("Shceny", sp.Shceny),
-            ("Shcenz", sp.Shcenz),
+            ("Ax", sp.area),
+            ("Ix", sp.ix),
+            ("Iy", sp.iy),
+            ("Iz", sp.iz),
+            ("Iyz", sp.iyz),
+            ("Wxmin", sp.wxmin),
+            ("Wymin", sp.wymin),
+            ("Wzmin", sp.wzmin),
+            ("Sy", sp.sy),
+            ("Sz", sp.sz),
+            ("Shary", sp.shary),
+            ("Sharz", sp.sharz),
+            ("Shceny", sp.shceny),
+            ("Shcenz", sp.shcenz),
         ]:
             res = sec_prop[1]
             if res is not None:
