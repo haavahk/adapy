@@ -10,6 +10,7 @@ class BaseTypes:
     BOX = "BOX"
     TUBULAR = "TUB"
     IPROFILE = "I"
+    LPROFILE = "L"
     TPROFILE = "T"
     ANGULAR = "HP"
     CHANNEL = "UNP"
