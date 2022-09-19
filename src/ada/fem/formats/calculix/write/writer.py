@@ -102,7 +102,7 @@ def beam_str(fem_sec: FemSection):
 
         gp = eval_general_properties(fem_sec.section)
         fem_sec.material.model.plasticity_model = None
-        props = f" {gp.Ax}, {gp.Iy}, {0.0}, {gp.Iz}, {gp.Ix}\n {n1}"
+        props = f" {gp.area}, {gp.iy}, {0.0}, {gp.iz}, {gp.ix}\n {n1}"
         return f"""{top_line}
 *Beam Section, elset={fem_sec.elset.name}, material={fem_sec.material.name},  section=GENERAL{rotary_str}
 {props}"""
