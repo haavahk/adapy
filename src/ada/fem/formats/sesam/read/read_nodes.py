@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ada.concepts.containers import Nodes
@@ -10,12 +12,12 @@ if TYPE_CHECKING:
     from ada.fem import FEM
 
 
-def get_nodes(bulk_str: str, parent: "FEM") -> Nodes:
+def get_nodes(bulk_str: str, parent: FEM) -> Nodes:
     nodes = [get_node(m, parent) for m in cards.re_gcoord_in.finditer(bulk_str)]
     return Nodes(nodes, parent=parent)
 
 
-def renumber_nodes(bulk_str: str, fem: "FEM") -> None:
+def renumber_nodes(bulk_str: str, fem: FEM) -> None:
     node_map = {nodeno: nodex for nodex, nodeno in map(get_nodeno, cards.re_gnode_in.finditer(bulk_str))}
     fem.nodes.renumber(renumber_map=node_map)
 
