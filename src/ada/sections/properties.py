@@ -7,9 +7,12 @@ import numpy as np
 
 from .categories import SectionCat
 from .concept import GeneralProperties
+from .section_profiles import CircularProfile, TubularProfile, FlatbarProfile, BoxProfile, ChannelProfile, \
+    IProfile, TProfile, LProfile
 
 if TYPE_CHECKING:
-    from ada.sections.concept import Section
+    from .section_profiles import Profile
+
 
 # List of documents the various formulas are based upon
 #
@@ -22,37 +25,37 @@ if TYPE_CHECKING:
 #     Van Nostrand Company Inc.
 
 
-def calculate_general_properties(section: Section) -> Union[None, GeneralProperties]:
+def calculate_general_properties(profile: Profile) -> Union[None, GeneralProperties]:
     """Calculations of cross section properties are based on different sources of information."""
-    bt = SectionCat.BASETYPES
+    # bt = SectionCat.BASETYPES
     section_map = {
-        bt.CIRCULAR: calc_circular,
-        bt.IPROFILE: calc_isec,
-        bt.BOX: calc_box,
-        bt.TUBULAR: calc_tubular,
-        bt.ANGULAR: calc_angular,
-        bt.CHANNEL: calc_channel,
-        bt.FLATBAR: calc_flatbar,
-        bt.TPROFILE: calc_isec,
+        CircularProfile: calc_circular,
+        IProfile: calc_isec,
+        BoxProfile: calc_box,
+        TubularProfile: calc_tubular,
+        ChannelProfile: calc_channel,
+        FlatbarProfile: calc_flatbar,
+        TProfile: calc_isec,
+        LProfile: calc_angular
     }
+    calculator = section_map.get(profile.__class__)
+    # base_type = SectionCat.get_shape_type(section)
 
-    base_type = SectionCat.get_shape_type(section)
+    # if base_type == bt.GENERAL:
+    #     logging.error("Re-Calculating a general section")
+    #     return None
 
-    if base_type == bt.GENERAL:
-        logging.error("Re-Calculating a general section")
-        return None
+    # calc_func = section_map.get(base_type, None)
 
-    calc_func = section_map.get(base_type, None)
-
-    if calc_func is None:
+    if calculator is None:
         raise Exception(
-            f'Section type "{section.type}" is not yet supported in the cross section parameter calculations'
+            f'Section profile type "{profile.base_type}" is not yet supported in the cross section parameter calculations'
         )
 
-    return calc_func(section)
+    return calculator(profile)
 
 
-def calc_box(sec: Section) -> GeneralProperties:
+def calc_box(sec: BoxProfile) -> GeneralProperties:
     """Calculate box cross section properties"""
 
     sfy = 1.0
@@ -96,29 +99,29 @@ def calc_box(sec: Section) -> GeneralProperties:
     Cy = sec.w_top / 2
     Cz = h
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=sfy,
-        Sfz=sfz,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=sfy,
+        sfz=sfz,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )
 
 
-def calc_isec(sec: Section) -> GeneralProperties:
+def calc_isec(sec: IProfile) -> GeneralProperties:
     """Calculate I/H cross section properties"""
 
     sfy = 1.0
@@ -170,29 +173,29 @@ def calc_isec(sec: Section) -> GeneralProperties:
     Cz = z
 
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=1,
-        Sfz=1,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=1,
+        sfz=1,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )
 
 
-def calc_angular(sec: Section) -> GeneralProperties:
+def calc_angular(sec: LProfile) -> GeneralProperties:
     """Calculate L cross section properties"""
 
     # rectangle A properties (web)
@@ -284,32 +287,32 @@ def calc_angular(sec: Section) -> GeneralProperties:
     Cz = z
 
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=1,
-        Sfz=1,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=1,
+        sfz=1,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )
 
 
-def calc_tubular(sec: Section) -> GeneralProperties:
+def calc_tubular(sec: TubularProfile) -> GeneralProperties:
     """Calculate Tubular cross section properties"""
 
-    t = sec.wt
+    t = sec.t
     sfy = 1.0
     sfz = 1.0
 
@@ -333,78 +336,29 @@ def calc_tubular(sec: Section) -> GeneralProperties:
     Cz = 0.0
 
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=1,
-        Sfz=1,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=1,
+        sfz=1,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )
 
 
-def calc_circular(sec: Section) -> GeneralProperties:
-    Sfy = 1.0
-    Sfz = 1.0
-    Iyz = 0.0
-
-    Ax = np.pi * sec.r**2
-    Iy = (np.pi * sec.r**4) / 4
-    Iz = Iy
-    Ix = 0.5 * np.pi * sec.r**4
-    Wymin = 0.25 * np.pi * sec.r**3
-    Wzmin = Wymin
-
-    Wxmin = Ix / sec.r
-
-    t = sec.r * 0.99
-    dy = sec.r * 2
-    di = dy - 2 * t
-    Sy = (dy**3 - di**3) / 12
-    Sz = Sy
-    Shary = (2 * Iz * t / Sy) * Sfy
-    Sharz = (2 * Iy * t / Sz) * Sfz
-    Shceny = 0
-    Shcenz = 0
-    Cy = 0.0
-    Cz = 0.0
-
-    return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=Sfy,
-        Sfz=Sfz,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
-    )
-
-
-def calc_flatbar(sec: Section) -> GeneralProperties:
+def calc_flatbar(sec: FlatbarProfile) -> GeneralProperties:
     """Flatbar (not supporting unsymmetric profile)"""
     w = sec.w_btn
     hz = sec.h
@@ -455,29 +409,29 @@ def calc_flatbar(sec: Section) -> GeneralProperties:
     Cz = hz
 
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=Sfy,
-        Sfz=Sfz,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=Sfy,
+        sfz=Sfz,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )
 
 
-def calc_channel(sec: Section) -> GeneralProperties:
+def calc_channel(sec: ChannelProfile) -> GeneralProperties:
     """Calculate section properties of a channel profile"""
     posweb = False
     hz = sec.h
@@ -525,23 +479,73 @@ def calc_channel(sec: Section) -> GeneralProperties:
     Shcenz = 0
 
     return GeneralProperties(
-        Ax=Ax,
-        Ix=Ix,
-        Iy=Iy,
-        Iz=Iz,
-        Iyz=Iyz,
-        Wxmin=Wxmin,
-        Wymin=Wymin,
-        Wzmin=Wzmin,
-        Shary=Shary,
-        Sharz=Sharz,
-        Shceny=Shceny,
-        Shcenz=Shcenz,
-        Sy=Sy,
-        Sz=Sz,
-        Sfy=sfy,
-        Sfz=sfz,
-        Cy=Cy,
-        Cz=Cz,
-        parent=sec,
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=sfy,
+        sfz=sfz,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
+    )
+
+
+def calc_circular(sec: CircularProfile) -> GeneralProperties:
+    Sfy = 1.0
+    Sfz = 1.0
+    Iyz = 0.0
+
+    Ax = np.pi * sec.r**2
+    Iy = (np.pi * sec.r**4) / 4
+    Iz = Iy
+    Ix = 0.5 * np.pi * sec.r**4
+    Wymin = 0.25 * np.pi * sec.r**3
+    Wzmin = Wymin
+
+    Wxmin = Ix / sec.r
+
+    # TODO: This should be changed!!
+    t = sec.r * 0.99
+    dy = sec.r * 2
+    di = dy - 2 * t
+    Sy = (dy**3 - di**3) / 12
+    Sz = Sy
+    Shary = (2 * Iz * t / Sy) * Sfy
+    Sharz = (2 * Iy * t / Sz) * Sfz
+    Shceny = 0
+    Shcenz = 0
+    Cy = 0.0
+    Cz = 0.0
+
+    return GeneralProperties(
+        area=Ax,
+        ix=Ix,
+        iy=Iy,
+        iz=Iz,
+        iyz=Iyz,
+        wxmin=Wxmin,
+        wymin=Wymin,
+        wzmin=Wzmin,
+        shary=Shary,
+        sharz=Sharz,
+        shceny=Shceny,
+        shcenz=Shcenz,
+        sy=Sy,
+        sz=Sz,
+        sfy=Sfy,
+        sfz=Sfz,
+        cy=Cy,
+        cz=Cz,
+        # parent=sec,
     )

@@ -1,138 +1,17 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import logging
 from dataclasses import dataclass, field, KW_ONLY
-from typing import TYPE_CHECKING, List, Tuple, Union, Iterable
+from typing import TYPE_CHECKING
 
 from ada.base.non_physical_objects import Backend
 from ada.concepts.curves import CurvePoly
-from ada.config import Settings
-from ada.sections.categories import BaseTypes, SectionCat
+from ada.sections.categories import SectionCat
+from ada.sections.section_profiles import Profile
 
 if TYPE_CHECKING:
     from ada import Beam
     from ada.fem import FemSection
-
-
-@dataclass
-class Profile(ABC):
-    """Section profile data"""
-
-    @property
-    def sec_str_formatting(self) -> str:
-        return "x".join(self.sec_str_vars)
-
-    @property
-    @abstractmethod
-    def sec_str_vars(self) -> Iterable:
-        """Section string variables"""
-
-    @property
-    @abstractmethod
-    def base_type(self) -> str:
-        """Returns the profile base type"""
-
-
-    @property
-    def sec_str(self) -> str:
-        """Returns profile section string"""
-        return self.base_type + self.sec_str_formatting
-
-
-@dataclass
-class CircularProfile(Profile):
-    r: float
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.CIRCULAR
-
-    @property
-    def sec_str_vars(self) -> Iterable:
-        return (self.r,)
-
-
-@dataclass
-class TubularProfile(CircularProfile):
-    t: float
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.TUBULAR
-
-    @property
-    def sec_str_vars(self) -> Iterable:
-        return self.r, self.t
-
-
-@dataclass
-class FlatbarProfile(Profile):
-    """Flatbar profile"""
-    h: float
-    w_top: float
-    w_btn: float
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.FLATBAR
-
-    @property
-    def sec_str_vars(self) -> Iterable:
-        return self.h, self.w_top
-
-
-@dataclass
-class BoxProfile(FlatbarProfile):
-    t_w: float
-    t_ftop: float
-    t_fbtn: float
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.BOX
-
-    @property
-    def sec_str_vars(self) -> Iterable:
-        return *super(BoxProfile, self).sec_str_vars, self.t_w, self.t_ftop
-
-
-@class ChannelProfile(Profile):
-    h: float
-    w_btn: float
-    t_w: float
-    t_fbtn: float
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.CHANNEL
-
-    @property
-    def sec_str_vars(self) -> Iterable:
-        return (self.h,)
-
-
-@dataclass
-class IProfile(BoxProfile):
-    """I-Profile"""
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.IPROFILE
-
-
-@dataclass
-class TProfile(BoxProfile):
-    """T-Profile"""
-
-    @property
-    def base_type(self) -> str:
-        return BaseTypes.TPROFILE
-
-
-@dataclass
-class LProfile(Profile):
-    """L-Profile"""
 
 
 @dataclass
@@ -321,42 +200,42 @@ class Section(Backend):
     # def wt(self, value: float):
     #     self._wt = value
     #     self._genprops = None
+    #
+    # @property
+    # def sec_str(self):
+    #     def s(x):
+    #         return x / 0.001
+    #
+    #     if self.type in SectionCat.box + SectionCat.igirders + SectionCat.tprofiles + SectionCat.shs + SectionCat.rhs:
+    #         sec_str = "{}{:g}x{:g}x{:g}x{:g}".format(self.type, s(self.h), s(self.w_top), s(self.t_w), s(self.t_ftop))
+    #     elif self.type in SectionCat.tubular:
+    #         sec_str = "{}{:g}x{:g}".format(self.type, s(self.r), s(self.wt))
+    #     elif self.type in SectionCat.circular:
+    #         sec_str = "{}{:g}".format(self.type, s(self.r))
+    #     elif self.type in SectionCat.angular:
+    #         sec_str = "{}{:g}x{:g}".format(self.type, s(self.h), s(self.t_w))
+    #     elif self.type in SectionCat.iprofiles:
+    #         sec_str = self._sec_str
+    #     elif self.type in SectionCat.channels:
+    #         sec_str = "{}{:g}".format(self.type, s(self.h))
+    #     elif self.type in SectionCat.general:
+    #         sec_str = "{}{}".format(self.type, self.id)
+    #     elif self.type in SectionCat.flatbar:
+    #         sec_str = f"{self.type}{s(self.h)}x{s(self.w_top)}"
+    #     elif self.type == "poly":
+    #         sec_str = "PolyCurve"
+    #     else:
+    #         raise ValueError(f'Section type "{self.type}" has not been given a section str')
+    #     return sec_str.replace(".", "_") if sec_str is not None else None
 
-    @property
-    def sec_str(self):
-        def s(x):
-            return x / 0.001
-
-        if self.type in SectionCat.box + SectionCat.igirders + SectionCat.tprofiles + SectionCat.shs + SectionCat.rhs:
-            sec_str = "{}{:g}x{:g}x{:g}x{:g}".format(self.type, s(self.h), s(self.w_top), s(self.t_w), s(self.t_ftop))
-        elif self.type in SectionCat.tubular:
-            sec_str = "{}{:g}x{:g}".format(self.type, s(self.r), s(self.wt))
-        elif self.type in SectionCat.circular:
-            sec_str = "{}{:g}".format(self.type, s(self.r))
-        elif self.type in SectionCat.angular:
-            sec_str = "{}{:g}x{:g}".format(self.type, s(self.h), s(self.t_w))
-        elif self.type in SectionCat.iprofiles:
-            sec_str = self._sec_str
-        elif self.type in SectionCat.channels:
-            sec_str = "{}{:g}".format(self.type, s(self.h))
-        elif self.type in SectionCat.general:
-            sec_str = "{}{}".format(self.type, self.id)
-        elif self.type in SectionCat.flatbar:
-            sec_str = f"{self.type}{s(self.h)}x{s(self.w_top)}"
-        elif self.type == "poly":
-            sec_str = "PolyCurve"
-        else:
-            raise ValueError(f'Section type "{self.type}" has not been given a section str')
-        return sec_str.replace(".", "_") if sec_str is not None else None
-
-    @property
-    def properties(self) -> GeneralProperties:
-        if self._genprops is None:
-            from .properties import calculate_general_properties
-
-            self._genprops = calculate_general_properties(self)
-
-        return self._genprops
+    # @property
+    # def properties(self) -> GeneralProperties:
+    #     if self._genprops is None:
+    #         from .properties import calculate_general_properties
+    #
+    #         self._genprops = calculate_general_properties(self)
+    #
+    #     return self._genprops
 
     # @property
     # def units(self):
@@ -424,16 +303,17 @@ class Section(Backend):
         return hash(self.guid)
 
     def __repr__(self):
-        if self.type in SectionCat.circular + SectionCat.tubular:
-            return f"Section({self.name}, {self.type}, r: {self.r}, wt: {self.wt})"
-        elif self.type in SectionCat.general:
-            p = self.properties
-            return f"Section({self.name}, {self.type}, Ax: {p.area}, Ix: {p.ix}, Iy: {p.iy}, Iz: {p.iz}, Iyz: {p.iyz})"
-        else:
-            return (
-                f"Section({self.name}, {self.type}, h: {self.h}, w_btn: {self.w_btn}, "
-                f"w_top: {self.w_top}, t_fbtn: {self.t_fbtn}, t_ftop: {self.t_ftop}, t_w: {self.t_w})"
-            )
+        return self.profile.sec_str
+        # if self.type in SectionCat.circular + SectionCat.tubular:
+        #     return f"Section({self.name}, {self.type}, r: {self.r}, wt: {self.wt})"
+        # elif self.type in SectionCat.general:
+        #     p = self.properties
+        #     return f"Section({self.name}, {self.type}, Ax: {p.area}, Ix: {p.ix}, Iy: {p.iy}, Iz: {p.iz}, Iyz: {p.iyz})"
+        # else:
+        #     return (
+        #         f"Section({self.name}, {self.type}, h: {self.h}, w_btn: {self.w_btn}, "
+        #         f"w_top: {self.w_top}, t_fbtn: {self.t_fbtn}, t_ftop: {self.t_ftop}, t_w: {self.t_w})"
+        #     )
 
 
 class SectionParts:
