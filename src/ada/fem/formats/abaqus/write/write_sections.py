@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
 log_fin = "Please check your result and input. This is not a validated method of solving this issue"
 
 
-def sections_str(fem: "FEM"):
+def sections_str(fem: FEM):
     solids = fem.sections.solids
     shells = fem.sections.shells
     lines = fem.sections.lines
@@ -92,7 +94,7 @@ def line_section_props(fem_sec: FemSection):
     elif sec_data == "GENERAL":
         mat = fem_sec.material.model
         gp = eval_general_properties(sec)
-        return f"{gp.Ax}, {gp.Iy}, {gp.Iyz}, {gp.Iz}, {gp.Ix}\n {n1}\n {mat.E:.3E}, {mat.G},{mat.alpha:.2E}"
+        return f"{gp.area}, {gp.iy}, {gp.iyz}, {gp.iz}, {gp.ix}\n {n1}\n {mat.E:.3E}, {mat.G},{mat.alpha:.2E}"
     elif sec_data == "PIPE":
         return f"{sec.r}, {sec.wt}\n {n1}"
     elif sec_data == "L":
@@ -139,24 +141,24 @@ def line_temperature_str(fem_sec: FemSection):
 def eval_general_properties(section: Section) -> GeneralProperties:
     gp = section.properties
     name = gp.parent.parent.name
-    if gp.Ix <= 0.0:
-        gp.Ix = 1
+    if gp.ix <= 0.0:
+        gp.ix = 1
         logging.error(f"Section {name} Ix <= 0.0. Changing to 2. {log_fin}")
-    if gp.Iy <= 0.0:
-        gp.Iy = 2
+    if gp.iy <= 0.0:
+        gp.iy = 2
         logging.error(f"Section {name} Iy <= 0.0. Changing to 2. {log_fin}")
-    if gp.Iz <= 0.0:
-        gp.Iz = 2
+    if gp.iz <= 0.0:
+        gp.iz = 2
         logging.error(f"Section {name} Iz <= 0.0. Changing to 2. {log_fin}")
-    if gp.Iyz <= 0.0:
-        gp.Iyz = (gp.Iy + gp.Iz) / 2
+    if gp.iyz <= 0.0:
+        gp.iyz = (gp.iy + gp.iz) / 2
         logging.error(f"Section {name} Iyz <= 0.0. Changing to (Iy + Iz) / 2. {log_fin}")
-    if gp.Iy * gp.Iz - gp.Iyz**2 < 0:
-        old_y = str(gp.Iy)
-        gp.Iy = 1.1 * (gp.Iy + (gp.Iyz**2) / gp.Iz)
+    if gp.iy * gp.iz - gp.iyz**2 < 0:
+        old_y = str(gp.iy)
+        gp.iy = 1.1 * (gp.iy + (gp.iyz ** 2) / gp.iz)
         logging.error(
-            f"Warning! Section {name}: I(11)*I(22)-I(12)**2 MUST BE POSITIVE. " f"Mod Iy={old_y} to {gp.Iy}. {log_fin}"
+            f"Warning! Section {name}: I(11)*I(22)-I(12)**2 MUST BE POSITIVE. " f"Mod Iy={old_y} to {gp.iy}. {log_fin}"
         )
-    if (-(gp.Iy + gp.Iz) / 2 < gp.Iyz <= (gp.Iy + gp.Iz) / 2) is False:
+    if (-(gp.iy + gp.iz) / 2 < gp.iyz <= (gp.iy + gp.iz) / 2) is False:
         raise ValueError("Iyz must be between -(Iy+Iz)/2 and (Iy+Iz)/2")
     return gp

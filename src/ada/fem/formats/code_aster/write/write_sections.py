@@ -71,7 +71,7 @@ def write_beam_section(fem_sec: FemSection) -> Tuple[str, str, str]:
     sec_name = fem_sec.elset.name
     p = fem_sec.section.properties
 
-    values = ",".join([str(x) for x in [p.Ax, p.Iy, p.Iz, p.Ix]])
+    values = ",".join([str(x) for x in [p.area, p.iy, p.iz, p.ix]])
 
     local_vec = str(tuple(fem_sec.local_y))
 

@@ -137,7 +137,7 @@ def write_tubular(f, section, section_profile):
 
 def write_general(f, section, section_profile):
     logging.warning("Note! Creating a Circle profile from general section (just for visual inspection as of now)")
-    r = np.sqrt(section.properties.Ax / np.pi)
+    r = np.sqrt(section.properties.area / np.pi)
     return dict(Radius=r), "IfcCircleProfileDef"
 
 

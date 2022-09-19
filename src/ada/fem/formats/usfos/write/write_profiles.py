@@ -86,6 +86,6 @@ def general_beam(fs: FemSection) -> str:
     s = fs.section
     p = s.properties
     return (
-        f" GENBEAM{fs.id:>11}{p.Ax:>11.3E}{p.Ix:>11.3E}{p.Iy:>11.3E}{p.Iz:>11.3E}\n{p.Wxmin:>11.3E}{p.Wymin:>11.3E}"
-        f"{p.Wzmin:>11.3E}{p.Shary:>11.3E}\n{p.Sharz:>11.3E}\n"
+        f" GENBEAM{fs.id:>11}{p.area:>11.3E}{p.ix:>11.3E}{p.iy:>11.3E}{p.iz:>11.3E}\n{p.wxmin:>11.3E}{p.wymin:>11.3E}"
+        f"{p.wzmin:>11.3E}{p.shary:>11.3E}\n{p.sharz:>11.3E}\n"
     )
