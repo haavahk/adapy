@@ -206,7 +206,7 @@ class FemElements:
         def calc_bm_elem(el: Elem):
             nodes_ = el.get_offset_coords()
             elem_len = vector_length(nodes_[-1] - nodes_[0])
-            vol_ = el.fem_sec.section.properties.Ax * elem_len
+            vol_ = el.fem_sec.section.properties.area * elem_len
             mass = vol_ * el.fem_sec.material.model.rho
             center = sum([e.p for e in el.nodes]) / len(el.nodes)
 
