@@ -21,7 +21,7 @@ def cross_sec_face(sec_profile: SectionProfile, placement: Placement, solid_repr
     elif sec_profile.sec.type in SectionCat.circular:
         outer_shape = make_wire([make_circle(placement.origin, placement.zdir, sec_profile.sec.r)])
     elif sec_profile.sec.type in SectionCat.general:
-        radius = np.sqrt(sec_profile.sec.properties.Ax / np.pi)
+        radius = np.sqrt(sec_profile.sec.properties.area / np.pi)
         outer_shape = make_wire([make_circle(placement.origin, placement.zdir, radius)])
     else:
         if sec_profile.disconnected is False:
