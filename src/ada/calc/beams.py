@@ -160,7 +160,7 @@ def simply_supported(x, w, beam: Beam, res_type: Union[ResType.displ, ResType.sh
     :return:
     """
     E = beam.material.model.E
-    I = beam.section.properties.Iy
+    I = beam.section.properties.iy
     L = beam.length
     res_map = dict(
         DISPL=displ(x, w, E, I, L),
