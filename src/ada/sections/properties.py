@@ -61,7 +61,7 @@ def calc_box(sec: BoxProfile) -> GeneralProperties:
     sfy = 1.0
     sfz = 1.0
 
-    Ax = sec.w_btn * sec.t_fbtn + sec.w_top * sec.t_ftop + sec.t_w * (sec.h - (sec.t_fbtn + sec.t_ftop)) * 2
+    area = sec.w_btn * sec.t_fbtn + sec.w_top * sec.t_ftop + sec.t_w * (sec.h - (sec.t_fbtn + sec.t_ftop)) * 2
 
     by = sec.w_top
     tt = sec.t_ftop
@@ -77,46 +77,46 @@ def calc_box(sec: BoxProfile) -> GeneralProperties:
     f = by * tt
     g = ty * d
 
-    area = e + f + 2 * g
-    h = (e * a + f * c + 2 * b * g) / area
+    partial_area = e + f + 2 * g
+    h = (e * a + f * c + 2 * b * g) / partial_area
     ha = sec.h - (sec.t_fbtn + sec.t_ftop) / 2.0
     hb = sec.w_top - sec.t_w
 
-    Ix = 4 * (ha * hb) ** 2 / (hb / tb + hb / ty + 2 * ha / ty)
-    Iy = (by * (tb**3 + tt**3) + 2 * ty * d**3) / 12 + e * (h - a) ** 2 + f * (c - h) ** 2 + 2 * g * (b - h) ** 2
+    ix = 4 * (ha * hb) ** 2 / (hb / tb + hb / ty + 2 * ha / ty)
+    iy = (by * (tb**3 + tt**3) + 2 * ty * d**3) / 12 + e * (h - a) ** 2 + f * (c - h) ** 2 + 2 * g * (b - h) ** 2
 
-    Iz = ((sec.t_fbtn + sec.t_ftop) * sec.w_top**3 + 2 * d * sec.t_w**3) / 12 + (g * hb**2) / 2
-    Iyz = 0
-    Wxmin = Ix * (hb + ha) / (ha * hb)
-    Wymin = Iy / max(sec.h - h, h)
-    Wzmin = 2 * Iz / sec.w_top
-    Sy = e * (h - a) + ty * (h - tb) ** 2
+    iz = ((sec.t_fbtn + sec.t_ftop) * sec.w_top**3 + 2 * d * sec.t_w**3) / 12 + (g * hb**2) / 2
+    iyz = 0
+    wxmin = ix * (hb + ha) / (ha * hb)
+    wymin = iy / max(sec.h - h, h)
+    wzmin = 2 * iz / sec.w_top
+    sy = e * (h - a) + ty * (h - tb) ** 2
     Sz = (sec.t_fbtn + sec.t_ftop) * sec.w_top**2 / 8 + g * hb / 2
-    Shary = (Iz / Sz) * 2 * sec.t_w * sfy
-    Sharz = (Iy / Sy) * 2 * ty * sfz
-    Shceny = 0
-    Shcenz = c - h - sec.t_fbtn * ha / (sec.t_fbtn + sec.t_ftop)
-    Cy = sec.w_top / 2
-    Cz = h
+    shary = (iz / Sz) * 2 * sec.t_w * sfy
+    sharz = (iy / sy) * 2 * ty * sfz
+    shceny = 0
+    shcenz = c - h - sec.t_fbtn * ha / (sec.t_fbtn + sec.t_ftop)
+    cy = sec.w_top / 2
+    cz = h
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
         sz=Sz,
         sfy=sfy,
         sfz=sfz,
-        cy=Cy,
-        cz=Cz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
@@ -133,64 +133,64 @@ def calc_isec(sec: IProfile) -> GeneralProperties:
     bb = sec.w_btn
     tb = sec.t_fbtn
 
-    Ax = bt * tt + ty * (hz - (tb + tt)) + bb * tb
+    area = bt * tt + ty * (hz - (tb + tt)) + bb * tb
     hw = hz - tt - tb
     a = tb + hw + tt / 2
     b = tb + hw / 2
     c = tb / 2
 
-    z = (bt * tt * a + hw * ty * b + bb * tb * c) / Ax
+    z = (bt * tt * a + hw * ty * b + bb * tb * c) / area
 
     tra = (bt * tb**3) / 12 + bt * tt * (hz - tt / 2 - z) ** 2
     trb = (ty * hw**3) / 12 + ty * hw * (tb + hw / 2 - z) ** 2
     trc = (bb * tb**3) / 12 + bb * tb * (tb / 2 - z) ** 2
 
     if tt == ty and tt == tb:
-        Ix = (tt**3) * (hw + bt + bb - 1.2 * tt) / 3
-        Wxmin = Ix / tt
+        ix = (tt**3) * (hw + bt + bb - 1.2 * tt) / 3
+        wxmin = ix / tt
     else:
-        Ix = 1.3 * (bt * tt**3 + hw * ty**3 + bb * tb**3) / 3
-        Wxmin = Ix / max(tt, ty, tb)
+        ix = 1.3 * (bt * tt**3 + hw * ty**3 + bb * tb**3) / 3
+        wxmin = ix / max(tt, ty, tb)
 
-    Iy = tra + trb + trc
-    Iz = (tb * bb**3 + hw * ty**3 + tt * bt**3) / 12
-    Iyz = 0
-    Wymin = Iy / max(hz - z, z)
-    Wzmin = 2 * Iz / max(bb, bt)
+    iy = tra + trb + trc
+    iz = (tb * bb**3 + hw * ty**3 + tt * bt**3) / 12
+    iyz = 0
+    wymin = iy / max(hz - z, z)
+    wzmin = 2 * iz / max(bb, bt)
 
-    # Sy should be checked. Confer older method implementation.
-    # Sy = sum(x_i * A_i)
-    # Sy = (((tt * bt) ** 2) * (hw / 2 + tt / 2)) * 2
-    Sy = Iy / (sec.w_top / 2)
+    # sy should be checked. Confer older method implementation.
+    # sy = sum(x_i * A_i)
+    # sy = (((tt * bt) ** 2) * (hw / 2 + tt / 2)) * 2
+    sy = iy / (sec.w_top / 2)
 
-    # Sy = (sec.t_w*sec.h/2)(sec.h/2)
-    Sz = (tt * bt**2 + tb * bb**2 + hw * ty**2) / 8
-    Shary = (Iz / Sz) * (tb + tt) * sfy
-    Sharz = (Iy / Sy) * ty * sfz
-    Shceny = 0
-    Shcenz = ((hz - tt / 2) * tt * bt**3 + (tb**2) * (bb**3) / 2) / (tt * bt**3 + tb * bb**3) - z
-    Cy = bb / 2
-    Cz = z
+    # sy = (sec.t_w*sec.h/2)(sec.h/2)
+    sz = (tt * bt**2 + tb * bb**2 + hw * ty**2) / 8
+    shary = (iz / sz) * (tb + tt) * sfy
+    sharz = (iy / sy) * ty * sfz
+    shceny = 0
+    shcenz = ((hz - tt / 2) * tt * bt**3 + (tb**2) * (bb**3) / 2) / (tt * bt**3 + tb * bb**3) - z
+    cy = bb / 2
+    cz = z
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
         sfy=1,
         sfz=1,
-        cy=Cy,
-        cz=Cz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
@@ -228,11 +228,11 @@ def calc_angular(sec: LProfile) -> GeneralProperties:
 
     Iz_a = (1 / 12) * a_h * a_w**3 + a_area * a_dcy**2
     Iz_b = (1 / 12) * b_h * b_w**3 + b_area * b_dcy**2
-    Iz = Iz_a + Iz_b
+    iz = Iz_a + Iz_b
 
     Iy_a = (1 / 12) * a_w * a_h**3 + a_area * a_dcz**2
     Iy_b = (1 / 12) * b_w * b_h**3 + b_area * b_dcz**2
-    Iy = Iy_a + Iy_b
+    iy = Iy_a + Iy_b
 
     posweb = False
 
@@ -249,9 +249,9 @@ def calc_angular(sec: LProfile) -> GeneralProperties:
     b = tz - hw / 2.0
     c = tz / 2.0
     piqrt = np.arctan(1.0)
-    Ax = ty * hw + by * tz + (1 - piqrt) * r**2
-    y = (hw * ty**2 + tz * by**2) / (2 * Ax)
-    z = (hw * b * ty + tz * by * c) / Ax
+    area = ty * hw + by * tz + (1 - piqrt) * r**2
+    y = (hw * ty**2 + tz * by**2) / (2 * area)
+    z = (hw * b * ty + tz * by * c) / area
     d = 6 * r + 2 * (ty + tz - np.sqrt(4 * r * (2 * r + ty + tz) + 2 * ty * tz))
     e = hw + tz - z
     f = hw - e
@@ -265,46 +265,46 @@ def calc_angular(sec: LProfile) -> GeneralProperties:
     else:
         raise ValueError("Currently not implemented this yet")
 
-    Ix = (1 / 3) * (by * tz**3 + (hz - tz) * ty**3)
-    Iyz = (rl * tz / 2) * (y**2 - rj**2) - (rk * ty / 2) * (e**2 - f**2)
+    ix = (1 / 3) * (by * tz**3 + (hz - tz) * ty**3)
+    iyz = (rl * tz / 2) * (y**2 - rj**2) - (rk * ty / 2) * (e**2 - f**2)
 
-    Wxmin = Ix / d
-    Wymin = Iy / max(z, hz - h)
-    Wzmin = Iz / max(y, rj)
-    Sy = (ty * e**2) / 2
-    Sz = (tz * rj**2) / 2
-    Shary = (Iz * tz / Sz) * sfy
-    Sharz = (Iy * tz / Sy) * sfz
+    wxmin = ix / d
+    wymin = iy / max(z, hz - h)
+    wzmin = iz / max(y, rj)
+    sy = (ty * e**2) / 2
+    sz = (tz * rj**2) / 2
+    shary = (iz * tz / sz) * sfy
+    sharz = (iy * tz / sy) * sfz
 
     if posweb:
-        Iyz = -Iyz
-        Shceny = rk
-        Cy = by - y
+        iyz = -iyz
+        shceny = rk
+        cy = by - y
     else:
-        Shceny = -rk
-        Cy = y
-    Shcenz = -rl
-    Cz = z
+        shceny = -rk
+        cy = y
+    shcenz = -rl
+    cz = z
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
         sfy=1,
         sfz=1,
-        cy=Cy,
-        cz=Cz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
@@ -318,42 +318,42 @@ def calc_tubular(sec: TubularProfile) -> GeneralProperties:
 
     dy = sec.r * 2
     di = dy - 2 * t
-    Ax = np.pi * sec.r**2 - np.pi * (sec.r - t) ** 2
-    Ix = 0.5 * np.pi * ((dy / 2) ** 4 - (di / 2) ** 4)
-    Iy = Ix / 2
-    Iz = Iy
-    Iyz = 0
-    Wxmin = 2 * Ix / dy
-    Wymin = 2 * Iy / dy
-    Wzmin = 2 * Iz / dy
-    Sy = (dy**3 - di**3) / 12
-    Sz = Sy
-    Shary = (2 * Iz * t / Sy) * sfy
-    Sharz = (2 * Iy * t / Sz) * sfz
-    Shceny = 0
-    Shcenz = 0
-    Cy = 0.0
-    Cz = 0.0
+    area = np.pi * sec.r**2 - np.pi * (sec.r - t) ** 2
+    ix = 0.5 * np.pi * ((dy / 2) ** 4 - (di / 2) ** 4)
+    iy = ix / 2
+    iz = iy
+    iyz = 0
+    wxmin = 2 * ix / dy
+    wymin = 2 * iy / dy
+    wzmin = 2 * iz / dy
+    sy = (dy**3 - di**3) / 12
+    sz = sy
+    shary = (2 * iz * t / sy) * sfy
+    sharz = (2 * iy * t / sz) * sfz
+    shceny = 0
+    shcenz = 0
+    cy = 0.0
+    cz = 0.0
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
         sfy=1,
         sfz=1,
-        cy=Cy,
-        cz=Cz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
@@ -368,65 +368,65 @@ def calc_flatbar(sec: FlatbarProfile) -> GeneralProperties:
     b = w / 2
     d = 0
 
-    Sfy = 1.0
-    Sfz = 1.0
+    sfy = 1.0
+    sfz = 1.0
 
-    Ax = w * hz
-    Iy = w * hz**3 / 12
-    Iz = hz * w**3 / 12
+    area = w * hz
+    iy = w * hz**3 / 12
+    iz = hz * w**3 / 12
 
-    bm = 2 * w * hz**2 / (hz**2 + Ax**2)
-    Wymin = Iy / max(h, d)
-    Wzmin = 2 * Iz / max(w, w)
-    Iyz = 0.0
+    bm = 2 * w * hz**2 / (hz**2 + area**2)
+    wymin = iy / max(h, d)
+    wzmin = 2 * iz / max(w, w)
+    iyz = 0.0
     if hz == bm:
         ca = 0.141
         cb = 0.208
-        Ix = ca * hz**4
-        Wxmin = cb * hz**3
+        ix = ca * hz**4
+        wxmin = cb * hz**3
     elif hz < bm:
         cn = bm / hz
         ca = (1 - 0.63 / cn + 0.052 / cn**5) * 3
         cb = ca / (1 - 0.63 / (1 + cn**3))
-        Ix = ca * bm * hz**3
-        Wxmin = cb * bm * hz**2
+        ix = ca * bm * hz**3
+        wxmin = cb * bm * hz**2
     else:
         cn = hz / bm
         ca = (1 - 0.63 / cn + 0.052 / cn**5) * 3
         cb = ca / (1 - 0.63 / (1 + cn**3))
-        Ix = ca * hz * bm**3
-        Wxmin = cb * hz * bm**3
+        ix = ca * hz * bm**3
+        wxmin = cb * hz * bm**3
 
-    Sy = (w * h**2) / 2 + (b - w / 2) * (h**2) / 3
-    Sz = hz * ((w**2) / 8 + a * (w / 4 + a / 6))
+    sy = (w * h**2) / 2 + (b - w / 2) * (h**2) / 3
+    sz = hz * ((w**2) / 8 + a * (w / 4 + a / 6))
 
-    Shary = Iz * hz * Sfy / Sz
-    Sharz = 2 * Iy * b * Sfz / Sy
+    shary = iz * hz * sfy / sz
+    sharz = 2 * iy * b * sfz / sy
 
-    Shceny = 0.0
-    Shcenz = 0.0
-    Cy = w / 2
-    Cz = hz
+    shceny = 0.0
+    shcenz = 0.0
+    cy = w / 2
+    cz = hz
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
-        sfy=Sfy,
-        sfz=Sfz,
-        cy=Cy,
-        cz=Cz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
+        sfy=sfy,
+        sfz=sfz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
@@ -442,110 +442,110 @@ def calc_channel(sec: ChannelProfile) -> GeneralProperties:
     sfz = 1.0
 
     a = hz - 2 * tz
-    Ax = 2 * by * tz + a * ty
-    y = (2 * tz * by**2 + a * ty**2) / (2 * Ax)
-    Iy = (ty * a**3) / 12 + 2 * ((by * tz**3) / 12 + by * tz * ((a + tz) / 2) ** 2)
+    area = 2 * by * tz + a * ty
+    y = (2 * tz * by**2 + a * ty**2) / (2 * area)
+    iy = (ty * a**3) / 12 + 2 * ((by * tz**3) / 12 + by * tz * ((a + tz) / 2) ** 2)
 
     if tz == ty:
-        Ix = ty**3 * (2 * by + a - 2.6 * ty) / 3
-        Wxmin = Ix / Iy
+        ix = ty**3 * (2 * by + a - 2.6 * ty) / 3
+        wxmin = ix / iy
     else:
-        Ix = 1.12 * (2 * by * tz**3 + a * ty**3) / 3
-        Wxmin = Ix / max(tz, ty)
+        ix = 1.12 * (2 * by * tz**3 + a * ty**3) / 3
+        wxmin = ix / max(tz, ty)
 
-    Iz = 2 * ((tz * by**3) / 12 + tz * by * (by / 2 - y) ** 2) + (a * ty**3) / 12 + a * ty * (y - ty / 2) ** 2
-    Iyz = 0
-    Wymin = 2 * Iy / hz
-    Wzmin = Iz / max(by - y, y)
-    Sy = by * tz * (tz + a) / 2 + (ty * a**2) / 8
-    Sz = tz * (by - y) ** 2
+    iz = 2 * ((tz * by**3) / 12 + tz * by * (by / 2 - y) ** 2) + (a * ty**3) / 12 + a * ty * (y - ty / 2) ** 2
+    iyz = 0
+    wymin = 2 * iy / hz
+    wzmin = iz / max(by - y, y)
+    sy = by * tz * (tz + a) / 2 + (ty * a**2) / 8
+    sz = tz * (by - y) ** 2
 
-    Shary = (Iz / Sz) * (2 * tz) * sfy
-    Sharz = (Iy / Sy) * ty * sfz
+    shary = (iz / sz) * (2 * tz) * sfy
+    sharz = (iy / sy) * ty * sfz
 
     if tz == ty:
-        q = ((by - ty / 2) ** 2) * ((hz - tz) ** 2) * tz / 4 * Iy
+        q = ((by - ty / 2) ** 2) * ((hz - tz) ** 2) * tz / 4 * iy
     else:
         q = ((by - ty / 2) ** 2) * tz / (2 * (by - ty / 2) * tz + (hz - tz) * ty / 3)
 
     if posweb:
-        Shceny = y - ty / 2 + q
-        Cy = by
+        shceny = y - ty / 2 + q
+        cy = by
     else:
-        Shceny = -(y - ty / 2 + q)
-        Cy = by - y
+        shceny = -(y - ty / 2 + q)
+        cy = by - y
 
-    Cz = hz / 2
-    Shcenz = 0
+    cz = hz / 2
+    shcenz = 0
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
         sfy=sfy,
         sfz=sfz,
-        cy=Cy,
-        cz=Cz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
 
 
 def calc_circular(sec: CircularProfile) -> GeneralProperties:
-    Sfy = 1.0
-    Sfz = 1.0
-    Iyz = 0.0
+    sfy = 1.0
+    sfz = 1.0
+    iyz = 0.0
 
-    Ax = np.pi * sec.r**2
-    Iy = (np.pi * sec.r**4) / 4
-    Iz = Iy
-    Ix = 0.5 * np.pi * sec.r**4
-    Wymin = 0.25 * np.pi * sec.r**3
-    Wzmin = Wymin
+    area = np.pi * sec.r**2
+    iy = (np.pi * sec.r**4) / 4
+    iz = iy
+    ix = 0.5 * np.pi * sec.r**4
+    wymin = 0.25 * np.pi * sec.r**3
+    wzmin = wymin
 
-    Wxmin = Ix / sec.r
+    wxmin = ix / sec.r
 
     # TODO: This should be changed!!
     t = sec.r * 0.99
     dy = sec.r * 2
     di = dy - 2 * t
-    Sy = (dy**3 - di**3) / 12
-    Sz = Sy
-    Shary = (2 * Iz * t / Sy) * Sfy
-    Sharz = (2 * Iy * t / Sz) * Sfz
-    Shceny = 0
-    Shcenz = 0
-    Cy = 0.0
-    Cz = 0.0
+    sy = (dy**3 - di**3) / 12
+    sz = sy
+    shary = (2 * iz * t / sy) * sfy
+    sharz = (2 * iy * t / sz) * sfz
+    shceny = 0
+    shcenz = 0
+    cy = 0.0
+    cz = 0.0
 
     return GeneralProperties(
-        area=Ax,
-        ix=Ix,
-        iy=Iy,
-        iz=Iz,
-        iyz=Iyz,
-        wxmin=Wxmin,
-        wymin=Wymin,
-        wzmin=Wzmin,
-        shary=Shary,
-        sharz=Sharz,
-        shceny=Shceny,
-        shcenz=Shcenz,
-        sy=Sy,
-        sz=Sz,
-        sfy=Sfy,
-        sfz=Sfz,
-        cy=Cy,
-        cz=Cz,
+        area=area,
+        ix=ix,
+        iy=iy,
+        iz=iz,
+        iyz=iyz,
+        wxmin=wxmin,
+        wymin=wymin,
+        wzmin=wzmin,
+        shary=shary,
+        sharz=sharz,
+        shceny=shceny,
+        shcenz=shcenz,
+        sy=sy,
+        sz=sz,
+        sfy=sfy,
+        sfz=sfz,
+        cy=cy,
+        cz=cz,
         # parent=sec,
     )
